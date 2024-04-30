@@ -30,7 +30,7 @@ class TrainConfig:
     checkpoints_path: Optional[str] = None  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     batch_size: int = 256  # Batch size for all networks
-    num_eval_batch: int = 200  # Do NC evaluation over a subset of the whole dataset
+    num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
     data_ratio: float = 1.0  # Reduce Swimmer data, too many of them
 
     arch: str = '256-256'  # Actor architecture
@@ -53,9 +53,9 @@ class TrainConfig:
 
 def cosine_similarity_gpu(a, b):
     a_norm = F.normalize(a, p=2, dim=1)
-    b_norm = F.normalize(b, p=2, dim=1)
+    b_norm = F.normalize(b, p=2, dim=1) if not torch.equal(a, b) else a_norm
 
-    return torch.mm(a_norm, b_norm.transpose(0, 1))
+    return torch.mm(a_norm, b_norm.T)
 
 
 def gram_schmidt(W):
@@ -71,10 +71,10 @@ def gram_schmidt(W):
 
 def compute_metrics(metrics, device):
     result = {}
-    y = metrics['targets'].to(device)  # (B,2)
-    Wh = metrics['outputs'].to(device)  # (B,2)
-    W = metrics['weights'].to(device)  # (2,256)
-    H = metrics['embeddings'].to(device)  # (B,256)
+    y = metrics['targets']  # (B,2)
+    Wh = metrics['outputs']  # (B,2)
+    W = metrics['weights']  # (2,256)
+    H = metrics['embeddings']  # (B,256)
     print("Y", y.shape)
     print("Wh", Wh.shape)
     print("W", W.shape)
@@ -82,10 +82,6 @@ def compute_metrics(metrics, device):
     print("H", H.shape)
 
     result['prediction_error'] = F.mse_loss(Wh, y).item()
-
-    H_norm = F.normalize(H, p=2, dim=1)
-    y_norm = F.normalize(y, p=2, dim=1)
-    W_norm = F.normalize(W, p=2, dim=1)
 
     result['W_norm_sq'] = torch.norm(W, p=2).item()
     result['W1_norm_sq'] = torch.dot(W[0], W[0]).item()
@@ -106,29 +102,39 @@ def compute_metrics(metrics, device):
     H_reconstruct = pca_for_H.inverse_transform(H_pca)
     # result['projection_error_PCA'] = np.mean(np.square(H_norm_np - H_reconstruct))
     result['projection_error_PCA'] = np.square(H_norm_np - H_reconstruct).sum(axis=1).mean().item()
+    del H_norm_np
+    del pca_for_H
+    del H_reconstruct
 
     # Cosine similarity of Y and H post PCA
     H_pca_tensor = torch.tensor(H_pca, dtype=torch.float32).to(device)
+    del H_pca
     result['cos_sim_y_h_postPCA'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
+    del H_pca_tensor
     # H_pca_norm = F.normalize(torch.tensor(H_pca, dtype=torch.float32).to(device), p=2, dim=1)
     # cos_sim_y_h_after_pca = torch.mm(H_pca_norm, y_norm.transpose(0, 1))
     # result['cos_sim_y_h_postPCA'] = cos_sim_y_h_after_pca.diag().mean().item()
 
     # MSE between cosine similarities of embeddings and targets with norm
-    cos_H_norm = torch.mm(H_norm, H_norm.transpose(0, 1))
-    cos_y_norm = torch.mm(y_norm, y_norm.transpose(0, 1))
+    cos_H_norm = cosine_similarity_gpu(H, H)
+    cos_y_norm = cosine_similarity_gpu(y, y)
     indices = torch.triu_indices(cos_H_norm.size(0), cos_H_norm.size(0), offset=1)
-    upper_tri_embeddings_norm = cos_H_norm[indices[0], indices[1]]
-    upper_tri_targets_norm = cos_y_norm[indices[0], indices[1]]
-    result['mse_cos_sim_norm'] = F.mse_loss(upper_tri_embeddings_norm, upper_tri_targets_norm).item()
+    cos_H_norm = cos_H_norm[indices[0], indices[1]]
+    cos_y_norm = cos_y_norm[indices[0], indices[1]]
+    result['mse_cos_sim_norm'] = F.mse_loss(cos_H_norm, cos_y_norm).item()
+    del cos_H_norm
+    del cos_y_norm
 
     # MSE between cosine similarities of embeddings and targets
     cos_H = torch.mm(H, H.transpose(0, 1))
     cos_y = torch.mm(y, y.transpose(0, 1))
     indices = torch.triu_indices(cos_H.size(0), cos_H.size(0), offset=1)
-    upper_tri_embeddings = cos_H[indices[0], indices[1]]
-    upper_tri_targets = cos_y[indices[0], indices[1]]
-    result['mse_cos_sim'] = F.mse_loss(upper_tri_embeddings, upper_tri_targets).item()
+    cos_H = cos_H[indices[0], indices[1]]
+    cos_y = cos_y[indices[0], indices[1]]
+    result['mse_cos_sim'] = F.mse_loss(cos_H, cos_y).item()
+    del cos_H
+    del cos_y
+    del indices
 
     # MSE between cosine similarities of PCA embeddings and targets
     # cos_H_pca = torch.mm(H_pca_norm, H_pca_norm.transpose(0, 1))
@@ -142,11 +148,11 @@ def compute_metrics(metrics, device):
     H_projected_E = torch.mm(H, P_E)
     # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
     result['projection_error_H2W_E'] = F.mse_loss(H_projected_E, H).item()
+    del H_projected_E
 
     # Cosine similarity of Y and H with H2W
-    H_coordinates = torch.mm(H_norm, U.T)
-    H_coordinates_norm = F.normalize(torch.tensor(H_coordinates).float().to(device), p=2, dim=1)
-    cos_sim_H2W = torch.mm(H_coordinates_norm, y_norm.transpose(0, 1))
+    H_coordinates = torch.mm(F.normalize(H), U.T)
+    cos_sim_H2W = cosine_similarity_gpu(H_coordinates, y)
     result['cos_sim_y_h_H2W_E'] = cos_sim_H2W.diag().mean().item()
     return result
 
@@ -179,7 +185,7 @@ class MujocoBuffer(Dataset):
         try:
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
-                self.size = dataset['observations'].shape[0] * data_ratio
+                self.size = int(dataset['observations'].shape[0] * data_ratio)
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)

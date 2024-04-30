@@ -23,15 +23,15 @@ def main():
     settings = [
         'env', 'E', ['swimmer', 'reacher'],
 
-        'max_epochs', 'T', [2],
+        'max_epochs', 'T', [200],
         'batch_size', 'B', [256],
         'arch', 'A', ['256-256'],
 
-        'reg_coff_H', 'coffH', [-1, 1e-5],
-        'reg_coff_W', 'coffW', [5e-2],
+        'reg_coff_H', 'coffH', [-1, 0, 1e-4, 1e-5],
+        'reg_coff_W', 'coffW', [1e-1, 5e-2, 1e-2, 5e-3],
         'lr', 'lr', [3e-4],
 
-        'eval_freq', 'Hz', [2],
+        'eval_freq', 'Hz', [1],
         'seed', 'S', [0]
     ]
 
@@ -44,11 +44,11 @@ def main():
     """replace values"""
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
-    config.num_eval_batch = 200
+    config.num_eval_batch = 100
     config.data_ratio = 0.1 if config.env == 'swimmer' else 1.0
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.group = 'test'
+    config.group = 'explore'
     config.name = '_'.join([v + str(actual_setting[k]) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
