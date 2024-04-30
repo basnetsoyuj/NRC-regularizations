@@ -329,7 +329,7 @@ class BC:
             reg_loss = 0.5 * self.reg_coff_H * (torch.norm(H, p=2) ** 2) / H.shape[0]
             train_loss = mse_loss + reg_loss
 
-        log_dict["train_loss"] = mse_loss.item()  # Only log the mse loss as train loss.
+        log_dict["train_loss"] = train_loss.item()
         # Optimize the actor
         self.actor_optimizer.zero_grad()
         train_loss.backward()
@@ -439,13 +439,18 @@ def run_BC(config: TrainConfig):
 
     train_log = trainer.NC_eval(train_loader)
     val_log = trainer.NC_eval(val_loader)
-    wandb.log({'train': train_log, 'validation': val_log}, step=0)
+    wandb.log({'train': train_log, 'validation': val_log})
 
     for epoch in range(config.max_epochs):
+        epoch_train_loss = 0
+        count = 0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch}/{config.max_epochs} Training"):
-            wandb.log(trainer.train(batch), step=trainer.total_it)
-
+            log_dict = trainer.train(batch)
+            epoch_train_loss += log_dict['train_loss']
+            count += 1
+            # wandb.log(trainer.train(batch), step=trainer.total_it)
+        epoch_train_loss /= count
         if (epoch + 1) % config.eval_freq == 0:
             train_log = trainer.NC_eval(train_loader)
             val_log = trainer.NC_eval(val_loader)
-            wandb.log({'train': train_log, 'validation': val_log}, step=epoch)
+            wandb.log({'train': train_log, 'validation': val_log, 'train_loss': epoch_train_loss})
