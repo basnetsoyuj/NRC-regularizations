@@ -30,13 +30,16 @@ class TrainConfig:
     checkpoints_path: Optional[str] = None  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     batch_size: int = 256  # Batch size for all networks
-    # BC
+    num_eval_batch: int = 200  # Do NC evaluation over a subset of the whole dataset
+    data_ratio: float = 1.0  # Reduce Swimmer data, too many of them
+
     arch: str = '256-256'  # Actor architecture
     reg_coff_H: float = 1e-5  # If it is -1, then the model is not UFM.
     reg_coff_W: float = 5e-2
     lr: float = 3e-4
-    # Data
+
     data_folder: str = '/NC_regression/dataset/mujoco'
+
     # Wandb logging
     project: str = "NC_regression"
     group: str = "test"
@@ -154,6 +157,7 @@ class MujocoBuffer(Dataset):
             data_folder: str,
             env: str,
             split: str,
+            data_ratio,
             device: str = "cpu",
     ):
         self.size = 0
@@ -161,7 +165,7 @@ class MujocoBuffer(Dataset):
         self.action_dim = 0
 
         self.states, self.actions = None, None
-        self._load_dataset(data_folder, env, split)
+        self._load_dataset(data_folder, env, split, data_ratio)
 
         self.device = device
 
@@ -169,19 +173,19 @@ class MujocoBuffer(Dataset):
         return torch.tensor(data, dtype=torch.float32, device=self.device)
 
     # Loads data in d4rl format, i.e. from Dict[str, np.array].
-    def _load_dataset(self, data_folder: str, env: str, split: str):
+    def _load_dataset(self, data_folder: str, env: str, split: str, data_ratio: float):
         file_name = '%s_%s.pkl' % (env, split)
         file_path = os.path.join(data_folder, file_name)
         try:
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
-                self.states = dataset['observations']
-                self.actions = dataset['actions']
+                self.size = dataset['observations'].shape[0] * data_ratio
+                self.states = dataset['observations'][:self.size, :]
+                self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
         except Exception as e:
             print(e)
 
-        self.size = self.states.shape[0]
         self.state_dim = self.states.shape[1]
         self.action_dim = self.actions.shape[1]
         print(f"Dataset size: {self.size}; State Dim: {self.state_dim}; Action_Dim: {self.action_dim}.")
@@ -288,6 +292,7 @@ class BC:
             actor: nn.Module,
             actor_optimizer: torch.optim.Optimizer,
             reg_coff_H: float,
+            num_eval_batch: int,
             device: str = "cpu",
     ):
         self.actor = actor
@@ -297,6 +302,7 @@ class BC:
 
         self.total_it = 0
         self.reg_coff_H = reg_coff_H
+        self.num_eval_batch = num_eval_batch
         self.device = device
 
     def train(self, batch) -> Dict[str, float]:
@@ -331,9 +337,11 @@ class BC:
         y = torch.empty((0,), device=self.device)
         H = torch.empty((0,), device=self.device)
         Wh = torch.empty((0,), device=self.device)
-        W = self.actor.W.weight.detach().copy()
+        W = self.actor.W.weight.detach().clone()
 
-        for batch in dataloader:
+        for i, batch in enumerate(dataloader):
+            if i+1 > self.num_eval_batch:
+                break
             states, actions = batch['states'], batch['actions']
             features = self.actor.get_feature(states)
             preds = self.actor.project(features)
@@ -370,17 +378,19 @@ def run_BC(config: TrainConfig):
         data_folder=config.data_folder,
         env=config.env,
         split='train',
+        data_ratio=config.data_ratio,
         device=config.device
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
         env=config.env,
         split='test',
+        data_ratio=config.data_ratio,
         device=config.device
     )
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
+    val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=True)
 
     # Set seeds
     seed = config.seed
@@ -403,6 +413,7 @@ def run_BC(config: TrainConfig):
         "actor": actor,
         "actor_optimizer": actor_optimizer,
         "reg_coff_H": config.reg_coff_H,
+        'num_eval_batch': config.num_eval_batch,
         "device": config.device
     }
 

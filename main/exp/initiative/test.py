@@ -44,6 +44,8 @@ def main():
     """replace values"""
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
+    config.num_eval_batch = 200
+    config.data_ratio = 0.1 if config.env == 'swimmer' else 1.0
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.group = 'test'
