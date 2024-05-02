@@ -5,10 +5,12 @@ import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 from tqdm import tqdm
 
 import numpy as np
 from sklearn.decomposition import PCA
+from scipy.linalg import sqrtm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -72,36 +74,29 @@ def gram_schmidt(W):
 def compute_metrics(metrics, device):
     result = {}
     y = metrics['targets']  # (B,2)
-    Wh = metrics['outputs']  # (B,2)
+    yhat = metrics['outputs']  # (B,2)
     W = metrics['weights']  # (2,256)
     H = metrics['embeddings']  # (B,256)
     print("Y", y.shape)
-    print("Wh", Wh.shape)
+    print("Y_hat", yhat.shape)
     print("W", W.shape)
     print("W0", W[0].shape)
     print("H", H.shape)
 
-    result['prediction_error'] = F.mse_loss(Wh, y).item()
+    result['prediction_error'] = F.mse_loss(y, yhat).item()
+    result['cosSIM_y_yhat'] = cosine_similarity_gpu(y, yhat).mean().item()
 
-    result['W_norm_sq'] = torch.norm(W, p=2).item()
-    result['W1_norm_sq'] = torch.dot(W[0], W[0]).item()
-    result['W2_norm_sq'] = torch.dot(W[1], W[1]).item()
-
-    # Cosine similarity calculations
-    result['cos_sim_y_Wh'] = cosine_similarity_gpu(y, Wh).mean().item()
-    # result['cos_sim_W11'] = torch.dot(W[0], W[0]).item()
-    result['cos_sim_W12'] = F.cosine_similarity(W[0], W[1], dim=0).item()
-    # result['cos_sim_W22'] = torch.dot(W[1], W[1]).item()
-    # result['cos_sim_W'] = F.cosine_similarity(W, W).fill_diagonal_(float('nan')).nanmean().item()
-    result['cos_sim_H'] = cosine_similarity_gpu(H, H).fill_diagonal_(float('nan')).nanmean().item()
+    # W analysis
+    result['W1_norm_sq'] = torch.square(W[0].norm()).item()
+    result['W2_norm_sq'] = torch.square(W[1].norm()).item()
+    result['cosSIM_W12'] = F.cosine_similarity(W[0], W[1], dim=0).item()
 
     # H with PCA
     H_norm_np = H.cpu().numpy()
     pca_for_H = PCA(n_components=2)
     H_pca = pca_for_H.fit_transform(H_norm_np)
     H_reconstruct = pca_for_H.inverse_transform(H_pca)
-    # result['projection_error_PCA'] = np.mean(np.square(H_norm_np - H_reconstruct))
-    result['projection_error_PCA'] = np.square(H_norm_np - H_reconstruct).sum(axis=1).mean().item()
+    result['PCA_reconstruction_error'] = np.square(H_norm_np - H_reconstruct).sum(axis=1).mean().item()
     del H_norm_np
     del pca_for_H
     del H_reconstruct
@@ -109,29 +104,27 @@ def compute_metrics(metrics, device):
     # Cosine similarity of Y and H post PCA
     H_pca_tensor = torch.tensor(H_pca, dtype=torch.float32).to(device)
     del H_pca
-    result['cos_sim_y_h_postPCA'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
+    result['cosSIM_y_Hpca'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
     del H_pca_tensor
-    # H_pca_norm = F.normalize(torch.tensor(H_pca, dtype=torch.float32).to(device), p=2, dim=1)
-    # cos_sim_y_h_after_pca = torch.mm(H_pca_norm, y_norm.transpose(0, 1))
-    # result['cos_sim_y_h_postPCA'] = cos_sim_y_h_after_pca.diag().mean().item()
 
     # MSE between cosine similarities of embeddings and targets with norm
     cos_H_norm = cosine_similarity_gpu(H, H)
+    result['cosSIM_H'] = cos_H_norm.fill_diagonal_(float('nan')).nanmean().item()
     cos_y_norm = cosine_similarity_gpu(y, y)
     indices = torch.triu_indices(cos_H_norm.size(0), cos_H_norm.size(0), offset=1)
     cos_H_norm = cos_H_norm[indices[0], indices[1]]
     cos_y_norm = cos_y_norm[indices[0], indices[1]]
-    result['mse_cos_sim_norm'] = F.mse_loss(cos_H_norm, cos_y_norm).item()
+    result['MSE_cosSIM_y_H_norm'] = F.mse_loss(cos_H_norm, cos_y_norm).item()
     del cos_H_norm
     del cos_y_norm
 
     # MSE between cosine similarities of embeddings and targets
-    cos_H = torch.mm(H, H.transpose(0, 1))
-    cos_y = torch.mm(y, y.transpose(0, 1))
+    cos_H = torch.mm(H, H.T)
+    cos_y = torch.mm(y, y.T)
     indices = torch.triu_indices(cos_H.size(0), cos_H.size(0), offset=1)
     cos_H = cos_H[indices[0], indices[1]]
     cos_y = cos_y[indices[0], indices[1]]
-    result['mse_cos_sim'] = F.mse_loss(cos_H, cos_y).item()
+    result['MSE_cosSIM_y_H'] = F.mse_loss(cos_H, cos_y).item()
     del cos_H
     del cos_y
     del indices
@@ -145,15 +138,15 @@ def compute_metrics(metrics, device):
     # Projection error with Gram-Schmidt
     U = gram_schmidt(W)
     P_E = torch.mm(U.T, U)
-    H_projected_E = torch.mm(H, P_E)
+    H_proj = torch.mm(H, P_E)
     # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
-    result['projection_error_H2W_E'] = F.mse_loss(H_projected_E, H).item()
-    del H_projected_E
+    result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
+    del H_proj
 
     # Cosine similarity of Y and H with H2W
     H_coordinates = torch.mm(F.normalize(H), U.T)
-    cos_sim_H2W = cosine_similarity_gpu(H_coordinates, y)
-    result['cos_sim_y_h_H2W_E'] = cos_sim_H2W.diag().mean().item()
+    result['cosSIM_y_H2W'] = F.cosine_similarity(H_coordinates, y).mean().item()
+
     return result
 
 
@@ -201,6 +194,42 @@ class MujocoBuffer(Dataset):
 
     def get_action_dim(self):
         return self.action_dim
+
+    def get_theory_stats(self):
+        Y = self.actions.T
+        Sigma = torch.mm(Y, self.actions) / Y.shape[1]
+        Sigma = Sigma.cpu().numpy()
+
+        # Sigma_sqrt = sqrtm(Sigma)
+        # eig_vals = np.linalg.eigvalsh(Sigma)
+        eig_vals, eig_vecs = np.linalg.eigh(Sigma)
+        sqrt_eig_vals = np.sqrt(eig_vals)
+        Sigma_sqrt = eig_vecs.dot(np.diag(sqrt_eig_vals)).dot(np.linalg.inv(eig_vecs))
+
+        min_eigval = eig_vals[0]
+        max_eigval = eig_vals[-1]
+
+        mu11 = Sigma[0, 0]
+        mu12 = Sigma[0, 1]
+        mu22 = Sigma[1, 1]
+
+        sqrt = np.sqrt((mu22 - mu11) ** 2 + 4 * mu12 ** 2)
+        gamma1 = (mu22 - mu11 + sqrt) / (2 * mu12)
+        gamma2 = (mu22 - mu11 - sqrt) / (2 * mu12)
+
+        return {
+            'mu11': Sigma[0, 0],
+            'mu12': Sigma[0, 1],
+            'mu22': Sigma[1, 1],
+            'min_eigval': min_eigval,
+            'max_eigval': max_eigval,
+            'gamma1': gamma1,
+            'gamma2': gamma2,
+            'sigma11': Sigma_sqrt[0, 0],
+            'sigma12': Sigma_sqrt[0, 1],
+            'sigma21': Sigma_sqrt[1, 0],
+            'sigma22': Sigma_sqrt[1, 1],
+        }
 
     def __len__(self):
         return self.size
@@ -298,6 +327,7 @@ class BC:
             actor: nn.Module,
             actor_optimizer: torch.optim.Optimizer,
             reg_coff_H: float,
+            reg_coff_W: float,
             num_eval_batch: int,
             device: str = "cpu",
     ):
@@ -308,6 +338,7 @@ class BC:
 
         self.total_it = 0
         self.reg_coff_H = reg_coff_H
+        self.reg_coff_W = reg_coff_W
         self.num_eval_batch = num_eval_batch
         self.device = device
 
@@ -320,14 +351,19 @@ class BC:
         # Compute actor loss
         if self.reg_coff_H == -1:
             preds = self.actor(states)
-            mse_loss = F.mse_loss(preds, actions)
-            train_loss = mse_loss
+            mse_loss = 0.5 * F.mse_loss(preds, actions)
+            reg_loss = 0
+            for param in self.actor.parameters():
+                reg_loss += torch.norm(param) ** 2
+            reg_loss = 0.5 * self.reg_coff_W * reg_loss
+            train_loss = mse_loss + reg_loss
         else:
             H = self.actor.get_feature(states)
             preds = self.actor.project(H)
-            mse_loss = F.mse_loss(preds, actions)
-            reg_loss = 0.5 * self.reg_coff_H * (torch.norm(H, p=2) ** 2) / H.shape[0]
-            train_loss = mse_loss + reg_loss
+            mse_loss = 0.5 * F.mse_loss(preds, actions)
+            reg_H_loss = 0.5 * self.reg_coff_H * (torch.norm(H, p=2) ** 2) / H.shape[0]
+            reg_W_loss = 0.5 * self.reg_coff_W * torch.norm(self.actor.W.weight) ** 2
+            train_loss = mse_loss + reg_H_loss + reg_W_loss
 
         log_dict["train_loss"] = train_loss.item()
         # Optimize the actor
@@ -406,19 +442,13 @@ def run_BC(config: TrainConfig):
     action_dim = train_dataset.get_action_dim()
     actor = Actor(state_dim, action_dim, arch=config.arch).to(config.device)
 
-    if config.reg_coff_H == -1:
-        actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.lr, weight_decay=config.reg_coff_W)
-    else:
-        actor_optimizer = torch.optim.Adam(
-            [{'params': actor.feature_map.parameters()},
-             {'params': actor.W.parameters(), 'weight_decay': config.reg_coff_W}],
-            lr=config.lr
-        )
+    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.lr)
 
     kwargs = {
         "actor": actor,
         "actor_optimizer": actor_optimizer,
         "reg_coff_H": config.reg_coff_H,
+        "reg_coff_W": config.reg_coff_W,
         'num_eval_batch': config.num_eval_batch,
         "device": config.device
     }
@@ -437,9 +467,16 @@ def run_BC(config: TrainConfig):
 
     wandb_init(asdict(config))
 
+    # TODO: fix and optimize wandb log.
+    train_theory_stats = train_dataset.get_theory_stats()
+    val_theory_states = val_dataset.get_theory_stats()
     train_log = trainer.NC_eval(train_loader)
     val_log = trainer.NC_eval(val_loader)
-    wandb.log({'train': train_log, 'validation': val_log})
+    wandb.log({'train': train_log,
+               'validation': val_log,
+               'trainConstant': train_theory_stats,
+               'valConstant': val_theory_states
+               })
 
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
@@ -453,4 +490,9 @@ def run_BC(config: TrainConfig):
         if (epoch + 1) % config.eval_freq == 0:
             train_log = trainer.NC_eval(train_loader)
             val_log = trainer.NC_eval(val_loader)
-            wandb.log({'train': train_log, 'validation': val_log, 'train_loss': epoch_train_loss})
+            wandb.log({'train': train_log,
+                       'validation': val_log,
+                       'train_loss': epoch_train_loss,
+                       'trainConstant': train_theory_stats,
+                       'valConstant': val_theory_states
+                       })

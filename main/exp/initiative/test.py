@@ -27,8 +27,8 @@ def main():
         'batch_size', 'B', [256],
         'arch', 'A', ['256-256'],
 
-        'reg_coff_H', 'coffH', [-1, 0, 1e-4, 1e-5],
-        'reg_coff_W', 'coffW', [1e-1, 5e-2, 1e-2, 5e-3],
+        'reg_coff_H', 'coffH', [-1, 0, 1e-2, 1e-3, 1e-4, 1e-5],
+        'reg_coff_W', 'coffW', [1e-1, 5e-2, 1e-2, 5e-3, 1e-3],
         'lr', 'lr', [3e-4],
 
         'eval_freq', 'Hz', [1],
@@ -48,7 +48,7 @@ def main():
     config.data_ratio = 0.1 if config.env == 'swimmer' else 1.0
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.group = 'explore'
+    config.group = 'official'
     config.name = '_'.join([v + str(actual_setting[k]) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
