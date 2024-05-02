@@ -197,7 +197,7 @@ class MujocoBuffer(Dataset):
 
     def get_theory_stats(self):
         Y = self.actions.T
-        Sigma = torch.mm(Y, self.actions) / Y.shape[1]
+        Sigma = Y @ self.actions / Y.shape[1]
         Sigma = Sigma.cpu().numpy()
 
         # Sigma_sqrt = sqrtm(Sigma)
