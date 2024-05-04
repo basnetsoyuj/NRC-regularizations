@@ -34,7 +34,7 @@ class TrainConfig:
     batch_size: int = 256  # Batch size for all networks
     num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
     data_ratio: float = 1.0  # Reduce Swimmer data, too many of them
-    normalize: str = 'none'
+    normalize: str = 'none'  # Choose from 'none', 'normal', 'standard'
 
     arch: str = '256-R-256-R|False'  # Actor architecture
     reg_coff_H: float = 1e-5  # If it is -1, then the model is not UFM.
@@ -95,18 +95,20 @@ def compute_metrics(metrics, device):
     # NC1
     H_np = H.cpu().numpy()
     pca_for_H = PCA(n_components=2)
-    H_pca = pca_for_H.fit_transform(H_np)
-    H_reconstruct = pca_for_H.inverse_transform(H_pca)
-    result['PCA_reconstruction_error'] = np.square(H_np - H_reconstruct).sum(axis=1).mean().item()
-    del H_reconstruct
+    pca_for_H.fit(H_np)
+    H_pca = pca_for_H.components_[:2, :]  # First two principal components
+    # H_pca = pca_for_H.fit_transform(H_np)
+    # H_reconstruct = pca_for_H.inverse_transform(H_pca)
+    # result['PCA_reconstruction_error'] = np.square(H_np - H_reconstruct).sum(axis=1).mean().item()
+    # del H_reconstruct
 
     try:
-        inverse_mat = np.linalg.inv(H_pca.T @ H_pca)
+        inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
     except Exception as e:
         print(e)
         result['NC1'] = -1
     else:
-        H_proj_PCA = H_pca @ inverse_mat @ H_pca.T @ H_np
+        H_proj_PCA = (H_pca.T @ inverse_mat @ H_pca @ H_np.T).T
         result['NC1'] = np.linalg.norm(H_np - H_proj_PCA, ord='fro').item()
     del H_np
     del H_proj_PCA
@@ -115,12 +117,12 @@ def compute_metrics(metrics, device):
 
     # NC3
     try:
-        inverse_mat = torch.inverse(W.T @ W)
+        inverse_mat = torch.inverse(W @ W.T)
     except Exception as e:
         print(e)
         result['NC3'] = -1
     else:
-        H_proj_W = W @ inverse_mat @ W.T @ H
+        H_proj_W = (W.T @ inverse_mat @ W @ H.T).T
         result['NC3'] = torch.norm(H - H_proj_W).item()
 
     del H_proj_W
