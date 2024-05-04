@@ -24,18 +24,18 @@ def main():
         'env', 'E', ['swimmer', 'reacher'],
         'mode', 'M', ['add_bias', 'del_relu', 'use_tanh', 'normal_y', 'standard_y', 'null'],
 
-        'max_epochs', 'T', [2],
-        'batch_size', 'B', [256],
+        'max_epochs', 'T', [200],
+        'batch_size', '', [256],
         'data_ratio', 'DR', [1, 0.1],
-        'arch', 'A', ['256-R-256-R|False'],
-        'normalize', 'N', ['none'],
+        'arch', '', ['256-R-256-R|False'],
+        'normalize', '', ['none'],
 
-        'reg_coff_H', 'coffH', [-1, 1e-2, 1e-3, 1e-4],
-        'reg_coff_W', 'coffW', [1e-2, 1e-3, 1e-4],
+        'reg_coff_H', 'lamH', [-1, 1e-2, 1e-3, 1e-4],
+        'reg_coff_W', 'lamW', [1e-2, 1e-3, 1e-4],
         'lr', 'lr', [3e-4],
 
-        'eval_freq', 'Hz', [1],
-        'seed', 'S', [0]
+        'eval_freq', '', [1],
+        'seed', '', [0]
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
@@ -48,7 +48,6 @@ def main():
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
     config.num_eval_batch = 100
-    # config.max_epochs =
 
     if config.mode == 'add_bias':
         config.arch = '256-R-256-R|True'
@@ -62,8 +61,8 @@ def main():
         config.normalize = 'standard'
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.group = 'test_NC2'
-    config.name = '_'.join([v + str(actual_setting[k]) for k, v in hyper2logname.items() if v != ''])
+    config.group = 'explore_NC2'
+    config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
 

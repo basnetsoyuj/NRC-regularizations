@@ -92,15 +92,22 @@ def compute_metrics(metrics, device):
     result['WWT_norm'] = torch.norm(WWT).item()
     del WWT
 
+    # H_pca = pca_for_H.fit_transform(H_np)
+    # H_reconstruct = pca_for_H.inverse_transform(H_pca)
+    # result['PCA_reconstruction_error'] = np.square(H_np - H_reconstruct).sum(axis=1).mean().item()
+    # del H_reconstruct
+
+    # Cosine similarity of Y and H post PCA
+    # H_pca_tensor = torch.tensor(H_pca, dtype=torch.float32).to(device)
+    # del H_pca
+    # result['cosSIM_y_Hpca'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
+    # del H_pca_tensor
+
     # NC1
     H_np = H.cpu().numpy()
     pca_for_H = PCA(n_components=2)
     pca_for_H.fit(H_np)
     H_pca = pca_for_H.components_[:2, :]  # First two principal components
-    # H_pca = pca_for_H.fit_transform(H_np)
-    # H_reconstruct = pca_for_H.inverse_transform(H_pca)
-    # result['PCA_reconstruction_error'] = np.square(H_np - H_reconstruct).sum(axis=1).mean().item()
-    # del H_reconstruct
 
     try:
         inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
@@ -126,12 +133,6 @@ def compute_metrics(metrics, device):
         result['NC3'] = torch.norm(H - H_proj_W).item()
 
     del H_proj_W
-
-    # Cosine similarity of Y and H post PCA
-    H_pca_tensor = torch.tensor(H_pca, dtype=torch.float32).to(device)
-    del H_pca
-    result['cosSIM_y_Hpca'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
-    del H_pca_tensor
 
     # MSE between cosine similarities of embeddings and targets with norm
     cos_H_norm = cosine_similarity_gpu(H, H)
@@ -560,7 +561,7 @@ def run_BC(config: TrainConfig):
     WWT_normalized = WWT / np.linalg.norm(WWT)
     min_eigval = train_theory_stats['min_eigval']
     Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
-    c_to_plot = np.linspace(0, min_eigval, num=1000)
+    c_to_plot = np.linspace(0, min_eigval, num=5000)
     NC2_to_plot = []
     for c in c_to_plot:
         c_sqrt = c ** 0.5
