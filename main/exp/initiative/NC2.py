@@ -48,6 +48,7 @@ def main():
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
     config.num_eval_batch = 100
+    config.max_epochs = 100 if config.reg_coff_H == -1 else 200
 
     if config.mode == 'add_bias':
         config.arch = '256-R-256-R|True'

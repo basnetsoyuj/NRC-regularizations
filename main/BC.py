@@ -333,8 +333,8 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
 
         arch, use_bias = arch.split('|')
-        arch = arch[0].split('-')
-        use_bias = bool(use_bias[0])
+        arch = arch.split('-')
+        use_bias = bool(use_bias)
 
         in_dim = state_dim
         module_list = []
