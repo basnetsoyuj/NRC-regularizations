@@ -584,22 +584,50 @@ def run_BC(config: TrainConfig):
         }
     )
 
-    x_to_plot = np.linspace(1, 10000, num=100)
-    lamH_to_plot = np.linspace(0, 0.1, num=1000)
+    c_to_plot = np.linspace(0.000001, min_eigval, num=1000)
+    lamH_to_plot = np.linspace(0.0001, 0.1, num=1000)
     NC2_to_plot = []
     lamW_to_plot = []
-    for x in x_to_plot:
+    for lamH in lamH_to_plot:
+        NC2_row = []
+        lamW_row = []
+        for c in c_to_plot:
+            A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
+            A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
+            diff_mat = WWT_normalized - A_normalized
+            lamW = c / lamH
+            NC2_row.append(np.linalg.norm(diff_mat).item())
+            lamW_row.append(lamW)
+        idx = np.argmin(NC2_row)
+        NC2_to_plot.append(NC2_row[idx])
+        lamW_to_plot.append(lamW_row[idx])
+
+    data = [[a, b, c] for (a, b, c) in zip(lamH_to_plot, NC2_to_plot, lamW_to_plot)]
+    table = wandb.Table(data=data, columns=["lamH", "NC2", "lamW"])
+    wandb.log(
+        {
+            "NC2(c, lamH)": wandb.plot.line(
+                table, "lamH", "NC2", title="NC2 as a Function of c and lamH"
+            )
+        }
+    )
+
+    c_to_plot = np.linspace(0.000001, min_eigval, num=80)
+    lamH_to_plot = np.linspace(0.0001, 0.1, num=80)
+    NC2_to_plot = []
+    lamW_to_plot = []
+    for c in c_to_plot:
         NC2_row = []
         lamW_row = []
         for lamH in lamH_to_plot:
-            A = lamH * (x / min_eigval)**0.5 * Sigma_sqrt - lamH * np.eye(2)
-            A_normalized = A / np.linalg.norm(A)
+            A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
+            A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
             diff_mat = WWT_normalized - A_normalized
-            lamW = min_eigval / x / lamH
+            lamW = c / lamH
             NC2_row.append(np.linalg.norm(diff_mat).item())
             lamW_row.append(lamW)
         NC2_to_plot.append(NC2_row)
         lamW_to_plot.append(lamW_row)
 
-    wandb.log({'NC2(x, lamH)': wandb.plots.HeatMap(list(x_to_plot), list(lamH_to_plot), NC2_to_plot, show_text=False)})
-    wandb.log({'lamW(x, lamH)': wandb.plots.HeatMap(list(x_to_plot), list(lamH_to_plot), lamW_to_plot, show_text=True)})
+    wandb.log({'NC2(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), NC2_to_plot, show_text=False)})
+    wandb.log({'lamW(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), lamW_to_plot, show_text=False)})

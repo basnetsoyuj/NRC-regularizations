@@ -64,12 +64,10 @@ def main():
     #     config.normalize = 'normal'
     # elif config.mode == 'standard_y':
     #     config.normalize = 'standard'
-    # Test
-    config.max_epochs = 1
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_case1'
-    config.group = 'test'
+    config.group = 'grid_search'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
