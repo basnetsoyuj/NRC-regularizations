@@ -329,7 +329,7 @@ def RL_eval(
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R'):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|False'):
         super(Actor, self).__init__()
 
         arch, use_bias = arch.split('|')
