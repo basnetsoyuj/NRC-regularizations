@@ -37,8 +37,8 @@ class TrainConfig:
     normalize: str = 'none'  # Choose from 'none', 'normal', 'standard'
 
     arch: str = '256-R-256-R|False'  # Actor architecture
-    reg_coff_H: float = 1e-5  # If it is -1, then the model is not UFM.
-    reg_coff_W: float = 5e-2
+    lamH: float = 1e-5  # If it is -1, then the model is not UFM.
+    lamW: float = 5e-2
     lr: float = 3e-4
 
     mode: str = 'null'
@@ -73,15 +73,19 @@ def gram_schmidt(W):
     return U
 
 
-def compute_metrics(metrics, device):
+def compute_metrics(metrics, split, device):
     result = {}
     y = metrics['targets']  # (B,2)
     yhat = metrics['outputs']  # (B,2)
     W = metrics['weights']  # (2,256)
     H = metrics['embeddings']  # (B,256)
+    B = H.shape[0]
 
     result['prediction_error'] = F.mse_loss(y, yhat).item()
-    result['cosSIM_y_yhat'] = cosine_similarity_gpu(y, yhat).mean().item()
+    # result['cosSIM_y_yhat'] = cosine_similarity_gpu(y, yhat).mean().item()
+
+    if split == 'test':
+        return result
 
     # WWT
     WWT = W @ W.T
@@ -92,34 +96,28 @@ def compute_metrics(metrics, device):
     result['WWT_norm'] = torch.norm(WWT).item()
     del WWT
 
-    # H_pca = pca_for_H.fit_transform(H_np)
-    # H_reconstruct = pca_for_H.inverse_transform(H_pca)
-    # result['PCA_reconstruction_error'] = np.square(H_np - H_reconstruct).sum(axis=1).mean().item()
-    # del H_reconstruct
-
-    # Cosine similarity of Y and H post PCA
-    # H_pca_tensor = torch.tensor(H_pca, dtype=torch.float32).to(device)
-    # del H_pca
-    # result['cosSIM_y_Hpca'] = F.cosine_similarity(H_pca_tensor, y, dim=1).mean().item()
-    # del H_pca_tensor
-
     # NC1
     H_np = H.cpu().numpy()
     pca_for_H = PCA(n_components=2)
-    pca_for_H.fit(H_np)
-    H_pca = pca_for_H.components_[:2, :]  # First two principal components
-
     try:
-        inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
+        pca_for_H.fit(H_np)
     except Exception as e:
         print(e)
         result['NC1'] = -1
     else:
-        H_proj_PCA = (H_pca.T @ inverse_mat @ H_pca @ H_np.T).T
-        result['NC1'] = np.linalg.norm(H_np - H_proj_PCA, ord='fro').item()
+        H_pca = pca_for_H.components_[:2, :]  # First two principal components
+
+        try:
+            inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
+        except Exception as e:
+            print(e)
+            result['NC1'] = -1
+        else:
+            H_proj_PCA = (H_pca.T @ inverse_mat @ H_pca @ H_np.T).T
+            result['NC1'] = np.square(H_np - H_proj_PCA).sum().item() / B
+            del H_proj_PCA
+        del H_pca
     del H_np
-    del H_proj_PCA
-    del H_pca
     del pca_for_H
 
     # NC3
@@ -130,37 +128,8 @@ def compute_metrics(metrics, device):
         result['NC3'] = -1
     else:
         H_proj_W = (W.T @ inverse_mat @ W @ H.T).T
-        result['NC3'] = torch.norm(H - H_proj_W).item()
-
-    del H_proj_W
-
-    # MSE between cosine similarities of embeddings and targets with norm
-    cos_H_norm = cosine_similarity_gpu(H, H)
-    result['cosSIM_H'] = cos_H_norm.fill_diagonal_(float('nan')).nanmean().item()
-    cos_y_norm = cosine_similarity_gpu(y, y)
-    indices = torch.triu_indices(cos_H_norm.size(0), cos_H_norm.size(0), offset=1)
-    cos_H_norm = cos_H_norm[indices[0], indices[1]]
-    cos_y_norm = cos_y_norm[indices[0], indices[1]]
-    result['MSE_cosSIM_y_H_norm'] = F.mse_loss(cos_H_norm, cos_y_norm).item()
-    del cos_H_norm
-    del cos_y_norm
-
-    # MSE between cosine similarities of embeddings and targets
-    cos_H = torch.mm(H, H.T)
-    cos_y = torch.mm(y, y.T)
-    indices = torch.triu_indices(cos_H.size(0), cos_H.size(0), offset=1)
-    cos_H = cos_H[indices[0], indices[1]]
-    cos_y = cos_y[indices[0], indices[1]]
-    result['MSE_cosSIM_y_H'] = F.mse_loss(cos_H, cos_y).item()
-    del cos_H
-    del cos_y
-    del indices
-
-    # MSE between cosine similarities of PCA embeddings and targets
-    # cos_H_pca = torch.mm(H_pca_norm, H_pca_norm.transpose(0, 1))
-    # indices = torch.triu_indices(cos_H_pca.size(0), cos_H_pca.size(0), offset=1)
-    # upper_tri_embeddings_pca = cos_H_pca[indices[0], indices[1]]
-    # result['mse_cos_sim_PCA'] = F.mse_loss(upper_tri_embeddings_pca, upper_tri_targets).item()
+        result['NC3'] = F.mse_loss(H, H_proj_W).item()
+        del H_proj_W
 
     # Projection error with Gram-Schmidt
     U = gram_schmidt(W)
@@ -170,9 +139,37 @@ def compute_metrics(metrics, device):
     result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
     del H_proj
 
-    # Cosine similarity of Y and H with H2W
-    H_coordinates = torch.mm(F.normalize(H), U.T)
-    result['cosSIM_y_H2W'] = F.cosine_similarity(H_coordinates, y).mean().item()
+    # # MSE between cosine similarities of embeddings and targets with norm
+    # cos_H_norm = cosine_similarity_gpu(H, H)
+    # result['cosSIM_H'] = cos_H_norm.fill_diagonal_(float('nan')).nanmean().item()
+    # cos_y_norm = cosine_similarity_gpu(y, y)
+    # indices = torch.triu_indices(cos_H_norm.size(0), cos_H_norm.size(0), offset=1)
+    # cos_H_norm = cos_H_norm[indices[0], indices[1]]
+    # cos_y_norm = cos_y_norm[indices[0], indices[1]]
+    # result['MSE_cosSIM_y_H_norm'] = F.mse_loss(cos_H_norm, cos_y_norm).item()
+    # del cos_H_norm
+    # del cos_y_norm
+
+    # # MSE between cosine similarities of embeddings and targets
+    # cos_H = torch.mm(H, H.T)
+    # cos_y = torch.mm(y, y.T)
+    # indices = torch.triu_indices(cos_H.size(0), cos_H.size(0), offset=1)
+    # cos_H = cos_H[indices[0], indices[1]]
+    # cos_y = cos_y[indices[0], indices[1]]
+    # result['MSE_cosSIM_y_H'] = F.mse_loss(cos_H, cos_y).item()
+    # del cos_H
+    # del cos_y
+    # del indices
+
+    # MSE between cosine similarities of PCA embeddings and targets
+    # cos_H_pca = torch.mm(H_pca_norm, H_pca_norm.transpose(0, 1))
+    # indices = torch.triu_indices(cos_H_pca.size(0), cos_H_pca.size(0), offset=1)
+    # upper_tri_embeddings_pca = cos_H_pca[indices[0], indices[1]]
+    # result['mse_cos_sim_PCA'] = F.mse_loss(upper_tri_embeddings_pca, upper_tri_targets).item()
+
+    # # Cosine similarity of Y and H with H2W
+    # H_coordinates = torch.mm(F.normalize(H), U.T)
+    # result['cosSIM_y_H2W'] = F.cosine_similarity(H_coordinates, y).mean().item()
 
     return result
 
@@ -207,8 +204,8 @@ class MujocoBuffer(Dataset):
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
                 self.size = int(dataset['observations'].shape[0] * data_ratio)
-                if env == 'swimmer':  # Swimmer has too many data, so by default we use 10% of them.
-                    self.size = int(self.size * 0.1)
+                # if env == 'swimmer':  # Swimmer has too many data, so by default we use 10% of them.
+                #     self.size = int(self.size * 0.1)
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
@@ -334,7 +331,7 @@ class Actor(nn.Module):
 
         arch, use_bias = arch.split('|')
         arch = arch.split('-')
-        use_bias = bool(use_bias)
+        use_bias = True if use_bias == 'True' else False
 
         in_dim = state_dim
         module_list = []
@@ -376,8 +373,8 @@ class BC:
             self,
             actor: nn.Module,
             actor_optimizer: torch.optim.Optimizer,
-            reg_coff_H: float,
-            reg_coff_W: float,
+            lamH: float,
+            lamW: float,
             num_eval_batch: int,
             device: str = "cpu",
     ):
@@ -387,8 +384,8 @@ class BC:
         self.actor_optimizer = actor_optimizer
 
         self.total_it = 0
-        self.reg_coff_H = reg_coff_H
-        self.reg_coff_W = reg_coff_W
+        self.lamH = lamH
+        self.lamW = lamW
         self.num_eval_batch = num_eval_batch
         self.device = device
 
@@ -399,20 +396,20 @@ class BC:
         states, actions = batch['states'], batch['actions']
 
         # Compute actor loss
-        if self.reg_coff_H == -1:
+        if self.lamH == -1:
             preds = self.actor(states)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
             reg_loss = 0
             for param in self.actor.parameters():
                 reg_loss += torch.norm(param) ** 2
-            reg_loss = 0.5 * self.reg_coff_W * reg_loss
+            reg_loss = 0.5 * self.lamW * reg_loss
             train_loss = mse_loss + reg_loss
         else:
             H = self.actor.get_feature(states)
             preds = self.actor.project(H)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
-            reg_H_loss = 0.5 * self.reg_coff_H * (torch.norm(H, p=2) ** 2) / H.shape[0]
-            reg_W_loss = 0.5 * self.reg_coff_W * torch.norm(self.actor.W.weight) ** 2
+            reg_H_loss = 0.5 * self.lamH * (torch.norm(H, p=2) ** 2) / H.shape[0]
+            reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight) ** 2
             train_loss = mse_loss + reg_H_loss + reg_W_loss
 
         log_dict["train_mse_loss"] = mse_loss.item()
@@ -424,7 +421,7 @@ class BC:
         return log_dict
 
     @torch.no_grad()
-    def NC_eval(self, dataloader):
+    def NC_eval(self, dataloader, split):
         self.actor.eval()
         y = torch.empty((0,), device=self.device)
         H = torch.empty((0,), device=self.device)
@@ -432,7 +429,7 @@ class BC:
         W = self.actor.W.weight.detach().clone()
 
         for i, batch in enumerate(dataloader):
-            if i+1 > self.num_eval_batch:
+            if i + 1 > self.num_eval_batch:
                 break
             states, actions = batch['states'], batch['actions']
             features = self.actor.get_feature(states)
@@ -447,7 +444,7 @@ class BC:
                'outputs': Wh,
                'weights': W
                }
-        log_dict = compute_metrics(res, self.device)
+        log_dict = compute_metrics(res, split, self.device)
         self.actor.train()
 
         return log_dict
@@ -499,8 +496,8 @@ def run_BC(config: TrainConfig):
     kwargs = {
         "actor": actor,
         "actor_optimizer": actor_optimizer,
-        "reg_coff_H": config.reg_coff_H,
-        "reg_coff_W": config.reg_coff_W,
+        "lamH": config.lamH,
+        "lamW": config.lamW,
         'num_eval_batch': config.num_eval_batch,
         "device": config.device
     }
@@ -521,19 +518,19 @@ def run_BC(config: TrainConfig):
 
     # TODO: fix and optimize wandb log.
     train_theory_stats = train_dataset.get_theory_stats()
-    val_theory_states = val_dataset.get_theory_stats()
-    if config.reg_coff_H != -1:
-        for d in [train_theory_stats, val_theory_states]:
-            d['A11'] = (config.reg_coff_H / config.reg_coff_W) ** 0.5 * d['sigma11'] - config.reg_coff_H
-            d['A22'] = (config.reg_coff_H / config.reg_coff_W) ** 0.5 * d['sigma22'] - config.reg_coff_H
-            d['A12'] = (config.reg_coff_H / config.reg_coff_W) ** 0.5 * d['sigma12']
+    # val_theory_states = val_dataset.get_theory_stats()
+    if config.lamH != -1 and config.lamW != 0:
+        for d in [train_theory_stats]:
+            d['A11'] = (config.lamH / config.lamW) ** 0.5 * d['sigma11'] - config.lamH
+            d['A22'] = (config.lamH / config.lamW) ** 0.5 * d['sigma22'] - config.lamH
+            d['A12'] = (config.lamH / config.lamW) ** 0.5 * d['sigma12']
 
-    train_log = trainer.NC_eval(train_loader)
-    val_log = trainer.NC_eval(val_loader)
+    train_log = trainer.NC_eval(train_loader, split='train')
+    val_log = trainer.NC_eval(val_loader, split='test')
     wandb.log({'train': train_log,
                'validation': val_log,
-               'trainConstant': train_theory_stats,
-               'valConstant': val_theory_states
+               'C': train_theory_stats,
+               # 'valConstant': val_theory_states
                })
 
     for epoch in range(config.max_epochs):
@@ -546,13 +543,13 @@ def run_BC(config: TrainConfig):
             # wandb.log(trainer.train(batch), step=trainer.total_it)
         epoch_train_loss /= count
         if (epoch + 1) % config.eval_freq == 0:
-            train_log = trainer.NC_eval(train_loader)
-            val_log = trainer.NC_eval(val_loader)
-            wandb.log({'train': train_log,
+            train_log = trainer.NC_eval(train_loader, split='train')
+            val_log = trainer.NC_eval(val_loader, split='test')
+            wandb.log({'train_mse_loss': epoch_train_loss,
+                       'train': train_log,
                        'validation': val_log,
-                       'train_loss': epoch_train_loss,
-                       'trainConstant': train_theory_stats,
-                       'valConstant': val_theory_states
+                       'C': train_theory_stats,
+                       # 'valConstant': val_theory_states
                        })
 
     # NC2
@@ -561,16 +558,24 @@ def run_BC(config: TrainConfig):
     WWT_normalized = WWT / np.linalg.norm(WWT)
     min_eigval = train_theory_stats['min_eigval']
     Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
-    c_to_plot = np.linspace(0, min_eigval, num=5000)
+
+    c_to_plot = np.linspace(0, min_eigval, num=1000)
     NC2_to_plot = []
+    NC2_11_to_plot = []
+    NC2_12_to_plot = []
+    NC2_22_to_plot = []
     for c in c_to_plot:
         c_sqrt = c ** 0.5
         A = Sigma_sqrt - c_sqrt * np.eye(2)
         A_normalized = A / np.linalg.norm(A)
-        NC2_to_plot.append(np.linalg.norm(WWT_normalized - A_normalized).item())
+        diff_mat = WWT_normalized - A_normalized
+        NC2_to_plot.append(np.linalg.norm(diff_mat).item())
+        NC2_11_to_plot.append(diff_mat[0, 0].item())
+        NC2_12_to_plot.append(diff_mat[0, 1].item())
+        NC2_22_to_plot.append(diff_mat[1, 1].item())
 
-    data = [[x, y] for (x, y) in zip(c_to_plot, NC2_to_plot)]
-    table = wandb.Table(data=data, columns=["c", "NC2"])
+    data = [[a, b, c, d, f] for (a, b, c, d, f) in zip(c_to_plot, NC2_to_plot, NC2_11_to_plot, NC2_12_to_plot, NC2_22_to_plot)]
+    table = wandb.Table(data=data, columns=["c", "NC2", "NC2_11", "NC2_12", "NC2_22"])
     wandb.log(
         {
             "NC2(c)": wandb.plot.line(
@@ -579,3 +584,22 @@ def run_BC(config: TrainConfig):
         }
     )
 
+    x_to_plot = np.linspace(1, 10000, num=100)
+    lamH_to_plot = np.linspace(0, 0.1, num=1000)
+    NC2_to_plot = []
+    lamW_to_plot = []
+    for x in x_to_plot:
+        NC2_row = []
+        lamW_row = []
+        for lamH in lamH_to_plot:
+            A = lamH * (x / min_eigval)**0.5 * Sigma_sqrt - lamH * np.eye(2)
+            A_normalized = A / np.linalg.norm(A)
+            diff_mat = WWT_normalized - A_normalized
+            lamW = min_eigval / x / lamH
+            NC2_row.append(np.linalg.norm(diff_mat).item())
+            lamW_row.append(lamW)
+        NC2_to_plot.append(NC2_row)
+        lamW_to_plot.append(lamW_row)
+
+    wandb.log({'NC2(x, lamH)': wandb.plots.HeatMap(list(x_to_plot), list(lamH_to_plot), NC2_to_plot, show_text=False)})
+    wandb.log({'lamW(x, lamH)': wandb.plots.HeatMap(list(x_to_plot), list(lamH_to_plot), lamW_to_plot, show_text=True)})
