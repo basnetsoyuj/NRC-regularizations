@@ -34,7 +34,7 @@ class TrainConfig:
     batch_size: int = 256  # Batch size for all networks
     num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
     data_ratio: float = 1.0  # Reduce Swimmer data, too many of them
-    normalize: str = 'none'  # Choose from 'none', 'normal', 'standard'
+    normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center'
 
     arch: str = '256-R-256-R|False'  # Actor architecture
     lamH: float = 1e-5  # If it is -1, then the model is not UFM.
@@ -225,6 +225,9 @@ class MujocoBuffer(Dataset):
             min_action = self.actions.min(axis=0)
             max_action = self.actions.max(axis=0)
             self.actions = (self.actions - min_action) / (max_action - min_action)
+        elif normalize == 'center':
+            mean = self.actions.mean(0)
+            self.actions = self.actions - mean
 
         print(f"Dataset size: {self.size}; State Dim: {self.state_dim}; Action_Dim: {self.action_dim}.")
 

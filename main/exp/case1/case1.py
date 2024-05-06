@@ -22,19 +22,18 @@ def main():
 
     settings = [
         'env', '', ['swimmer', 'reacher'],
-        'mode', 'M', ['add_bias', 'no_relu', 'both', 'null'],
+        'mode', 'M', ['add_bias', 'no_relu', 'both', 'center', 'null'],
 
-        'max_epochs', '', [100],
+        'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_ratio', 'DR', [0.1, 0.01, 0.001],
+        'data_ratio', 'DR', [0.1, 0.01, 0.001, 0.0001],
         'arch', '', ['256-R-256-R|False'],
         'normalize', '', ['none'],
 
         'lamH', '', [-1],
-        'lamW', 'lamW', [1e-1, 8e-2, 6e-2, 4e-2, 2e-2,
-                         1e-2, 8e-3, 6e-3, 4e-3, 2e-3,
-                         1e-3, 8e-4, 6e-4, 4e-4, 2e-4,
-                         1e-4, 5e-5, 1e-5, 1e-6, 0],
+        'lamW', 'lamW', [1e-1, 9e-2, 8e-2, 7e-2, 6e-2, 5e-2, 4e-2, 3e-2, 2e-2,
+                         1e-2, 9e-3, 8e-3, 7e-3, 6e-3, 5e-3, 4e-3, 3e-3, 2e-3,
+                         1e-3, 5e-4, 1e-4, 1e-5, 0],
         'lr', '', [3e-4],
 
         'eval_freq', '', [1],
@@ -58,6 +57,8 @@ def main():
         config.arch = '256-R-256|False'
     elif config.mode == 'both':
         config.arch = '256-R-256|True'
+    elif config.mode == 'center':
+        config.normalize = 'center'
     # elif config.mode == 'use_tanh':
     #     config.arch = '256-T-256-T|False'
     # elif config.mode == 'normal_y':
@@ -67,7 +68,7 @@ def main():
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_case1'
-    config.group = 'grid_search'
+    config.group = 'zoom_in'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
