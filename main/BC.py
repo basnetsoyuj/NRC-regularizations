@@ -33,10 +33,11 @@ class TrainConfig:
     load_model: str = ""  # Model load file name, "" doesn't load
     batch_size: int = 256  # Batch size for all networks
     num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
-    data_ratio: float = 1.0  # Reduce Swimmer data, too many of them
+    data_size: int = 10  # Number of episodes to use
     normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center'
 
     arch: str = '256-R-256-R|False'  # Actor architecture
+    optimizer: str = 'adam'
     lamH: float = 1e-5  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
     lr: float = 3e-4
@@ -96,14 +97,15 @@ def compute_metrics(metrics, split, device):
     result['WWT_norm'] = torch.norm(WWT).item()
     del WWT
 
-    # NC1
+    # NRC1
     H_np = H.cpu().numpy()
     pca_for_H = PCA(n_components=2)
     try:
         pca_for_H.fit(H_np)
     except Exception as e:
         print(e)
-        result['NC1'] = -1
+        result['NRC1'] = -1
+        result['NRC2_new'] = -1
     else:
         H_pca = pca_for_H.components_[:2, :]  # First two principal components
 
@@ -111,33 +113,40 @@ def compute_metrics(metrics, split, device):
             inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
         except Exception as e:
             print(e)
-            result['NC1'] = -1
+            result['NRC1'] = -1
+            result['NRC2_new'] = -1
         else:
-            H_proj_PCA = (H_pca.T @ inverse_mat @ H_pca @ H_np.T).T
-            result['NC1'] = np.square(H_np - H_proj_PCA).sum().item() / B
+            P = H_pca.T @ inverse_mat @ H_pca
+            del pca_for_H
+            del H_pca
+            del inverse_mat
+            H_proj_PCA = H_np @ P
+            result['NRC1'] = np.linalg.norm(H_np - H_proj_PCA).item()
+            del H_np
             del H_proj_PCA
-        del H_pca
-    del H_np
-    del pca_for_H
 
-    # NC3
+            P = torch.tensor(P, dtype=torch.float32, device=device)
+            W_proj_PCA = W @ P
+            result['NRC2_new'] = torch.norm(W - W_proj_PCA).item()
+
+    # NRC2_old
     try:
         inverse_mat = torch.inverse(W @ W.T)
     except Exception as e:
         print(e)
-        result['NC3'] = -1
+        result['NRC2_old'] = -1
     else:
-        H_proj_W = (W.T @ inverse_mat @ W @ H.T).T
-        result['NC3'] = F.mse_loss(H, H_proj_W).item()
+        H_proj_W = H @ W.T @ inverse_mat @ W
+        result['NRC2_old'] = torch.norm(H - H_proj_W).item()
         del H_proj_W
 
-    # Projection error with Gram-Schmidt
-    U = gram_schmidt(W)
-    P_E = torch.mm(U.T, U)
-    H_proj = torch.mm(H, P_E)
-    # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
-    result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
-    del H_proj
+    # # Projection error with Gram-Schmidt
+    # U = gram_schmidt(W)
+    # P_E = torch.mm(U.T, U)
+    # H_proj = torch.mm(H, P_E)
+    # # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
+    # result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
+    # del H_proj
 
     # # MSE between cosine similarities of embeddings and targets with norm
     # cos_H_norm = cosine_similarity_gpu(H, H)
@@ -174,13 +183,57 @@ def compute_metrics(metrics, split, device):
     return result
 
 
+def set_seed(
+        seed: int, env=None, deterministic_torch: bool = False
+):
+    if env is not None:
+        env.seed(seed)
+        env.action_space.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.use_deterministic_algorithms(deterministic_torch)
+
+
+def wandb_init(config: dict) -> None:
+    wandb.init(
+        config=config,
+        project=config["project"],
+        group=config["group"],
+        name=config["name"],
+        id=str(uuid.uuid4()),
+    )
+    wandb.run.save()
+
+
+# @torch.no_grad()
+# def RL_eval(
+#         env, actor: nn.Module, device: str, n_episodes: int, seed: int
+# ) -> np.ndarray:
+#     env.seed(seed)
+#     actor.eval()
+#     episode_rewards = []
+#     for _ in range(n_episodes):
+#         state, done = env.reset(), False
+#         episode_reward = 0.0
+#         while not done:
+#             action = actor.act(state, device)
+#             state, reward, done, _ = env.step(action)
+#             episode_reward += reward
+#         episode_rewards.append(episode_reward)
+#
+#     actor.train()
+#     return np.asarray(episode_rewards)
+
+
 class MujocoBuffer(Dataset):
     def __init__(
             self,
             data_folder: str,
             env: str,
             split: str,
-            data_ratio: float,
+            data_size: int,
             normalize: str,
             device: str = "cpu",
     ):
@@ -189,7 +242,7 @@ class MujocoBuffer(Dataset):
         self.action_dim = 0
 
         self.states, self.actions = None, None
-        self._load_dataset(data_folder, env, split, data_ratio, normalize)
+        self._load_dataset(data_folder, env, split, data_size, normalize)
 
         self.device = device
 
@@ -197,15 +250,15 @@ class MujocoBuffer(Dataset):
         return torch.tensor(data, dtype=torch.float32, device=self.device)
 
     # Loads data in d4rl format, i.e. from Dict[str, np.array].
-    def _load_dataset(self, data_folder: str, env: str, split: str, data_ratio: float, normalize: str):
+    def _load_dataset(self, data_folder: str, env: str, split: str, data_size: int, normalize: str):
         file_name = '%s_%s.pkl' % (env, split)
         file_path = os.path.join(data_folder, file_name)
         try:
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
-                self.size = int(dataset['observations'].shape[0] * data_ratio)
-                # if env == 'swimmer':  # Swimmer has too many data, so by default we use 10% of them.
-                #     self.size = int(self.size * 0.1)
+                if split == 'test':
+                    data_size /= 5
+                self.size = data_size * 1000 if env == 'swimmer' else data_size * 50
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
@@ -239,7 +292,9 @@ class MujocoBuffer(Dataset):
 
     def get_theory_stats(self):
         Y = self.actions.T
-        Sigma = Y @ self.actions / Y.shape[1]
+        Y = Y - Y.mean(axis=1, keepdims=True)
+        M = Y.shape[1]
+        Sigma = Y @ Y.T / M
 
         # Sigma_sqrt = sqrtm(Sigma)
         # eig_vals = np.linalg.eigvalsh(Sigma)
@@ -282,50 +337,6 @@ class MujocoBuffer(Dataset):
             'states': self._to_tensor(states),
             'actions': self._to_tensor(actions)
         }
-
-
-def set_seed(
-        seed: int, env=None, deterministic_torch: bool = False
-):
-    if env is not None:
-        env.seed(seed)
-        env.action_space.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.use_deterministic_algorithms(deterministic_torch)
-
-
-def wandb_init(config: dict) -> None:
-    wandb.init(
-        config=config,
-        project=config["project"],
-        group=config["group"],
-        name=config["name"],
-        id=str(uuid.uuid4()),
-    )
-    wandb.run.save()
-
-
-@torch.no_grad()
-def RL_eval(
-        env, actor: nn.Module, device: str, n_episodes: int, seed: int
-) -> np.ndarray:
-    env.seed(seed)
-    actor.eval()
-    episode_rewards = []
-    for _ in range(n_episodes):
-        state, done = env.reset(), False
-        episode_reward = 0.0
-        while not done:
-            action = actor.act(state, device)
-            state, reward, done, _ = env.step(action)
-            episode_reward += reward
-        episode_rewards.append(episode_reward)
-
-    actor.train()
-    return np.asarray(episode_rewards)
 
 
 class Actor(nn.Module):
@@ -432,7 +443,7 @@ class BC:
         W = self.actor.W.weight.detach().clone()
 
         for i, batch in enumerate(dataloader):
-            if i + 1 > self.num_eval_batch:
+            if split == 'train' and i + 1 > self.num_eval_batch:
                 break
             states, actions = batch['states'], batch['actions']
             features = self.actor.get_feature(states)
@@ -470,7 +481,7 @@ def run_BC(config: TrainConfig):
         data_folder=config.data_folder,
         env=config.env,
         split='train',
-        data_ratio=config.data_ratio,
+        data_size=config.data_size,
         normalize=config.normalize,
         device=config.device
     )
@@ -478,7 +489,7 @@ def run_BC(config: TrainConfig):
         data_folder=config.data_folder,
         env=config.env,
         split='test',
-        data_ratio=config.data_ratio,
+        data_size=config.data_size,
         normalize=config.normalize,
         device=config.device
     )
@@ -494,7 +505,8 @@ def run_BC(config: TrainConfig):
     action_dim = train_dataset.get_action_dim()
     actor = Actor(state_dim, action_dim, arch=config.arch).to(config.device)
 
-    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.lr)
+    actor_optimizer = {'adam': torch.optim.Adam,
+                       'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
 
     kwargs = {
         "actor": actor,
@@ -536,6 +548,7 @@ def run_BC(config: TrainConfig):
                # 'valConstant': val_theory_states
                })
 
+    all_WWT = []
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
         count = 0
@@ -546,6 +559,9 @@ def run_BC(config: TrainConfig):
             # wandb.log(trainer.train(batch), step=trainer.total_it)
         epoch_train_loss /= count
         if (epoch + 1) % config.eval_freq == 0:
+            W = actor.W.weight.detach().clone().cpu().numpy()
+            WWT = W @ W.T
+            all_WWT.append(WWT.reshape(1, -1))
             train_log = trainer.NC_eval(train_loader, split='train')
             val_log = trainer.NC_eval(val_loader, split='test')
             wandb.log({'train_mse_loss': epoch_train_loss,
@@ -555,7 +571,7 @@ def run_BC(config: TrainConfig):
                        # 'valConstant': val_theory_states
                        })
 
-    # NC2
+    # NRC3
     W = actor.W.weight.detach().clone().cpu().numpy()
     WWT = W @ W.T
     WWT_normalized = WWT / np.linalg.norm(WWT)
@@ -563,74 +579,101 @@ def run_BC(config: TrainConfig):
     Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
 
     c_to_plot = np.linspace(0, min_eigval, num=1000)
-    NC2_to_plot = []
-    NC2_11_to_plot = []
-    NC2_12_to_plot = []
-    NC2_22_to_plot = []
+    NRC3_old_to_plot = []
     for c in c_to_plot:
         c_sqrt = c ** 0.5
         A = Sigma_sqrt - c_sqrt * np.eye(2)
         A_normalized = A / np.linalg.norm(A)
         diff_mat = WWT_normalized - A_normalized
-        NC2_to_plot.append(np.linalg.norm(diff_mat).item())
-        NC2_11_to_plot.append(diff_mat[0, 0].item())
-        NC2_12_to_plot.append(diff_mat[0, 1].item())
-        NC2_22_to_plot.append(diff_mat[1, 1].item())
+        NRC3_old_to_plot.append(np.linalg.norm(diff_mat).item())
+    best_c = c_to_plot[np.argmin(NRC3_old_to_plot)]
 
-    data = [[a, b, c, d, f] for (a, b, c, d, f) in zip(c_to_plot, NC2_to_plot, NC2_11_to_plot, NC2_12_to_plot, NC2_22_to_plot)]
-    table = wandb.Table(data=data, columns=["c", "NC2", "NC2_11", "NC2_12", "NC2_22"])
+    ub_for_k = 1.2 * (min_eigval/max(config.lamW, 1e-10))**0.5
+    k_to_plot = np.linspace(0, ub_for_k, num=1000)
+    NRC3_new_to_plot = []
+    for k in k_to_plot:
+        A = k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - k * np.eye(2))
+        diff_mat = WWT - A
+        NRC3_new_to_plot.append(np.linalg.norm(diff_mat).item())
+    best_k = k_to_plot[np.argmin(NRC3_new_to_plot)]
+
+    data = [[a, b, c, d] for (a, b, c, d) in zip(c_to_plot, NRC3_old_to_plot, k_to_plot, NRC3_new_to_plot)]
+    table = wandb.Table(data=data, columns=["c", "NRC3_old", "k", "NRC3_new"])
     wandb.log(
         {
-            "NC2(c)": wandb.plot.line(
-                table, "c", "NC2", title="NC2 as a Function of c"
+            "NRC3": wandb.plot.line(
+                table, "k", "NRC3_new", title="NRC3"
             )
         }
     )
 
-    c_to_plot = np.linspace(0.000001, min_eigval, num=1000)
-    lamH_to_plot = np.linspace(0.0001, 0.1, num=1000)
-    NC2_to_plot = []
-    lamW_to_plot = []
-    for lamH in lamH_to_plot:
-        NC2_row = []
-        lamW_row = []
-        for c in c_to_plot:
-            A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
-            A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
-            diff_mat = WWT_normalized - A_normalized
-            lamW = c / lamH
-            NC2_row.append(np.linalg.norm(diff_mat).item())
-            lamW_row.append(lamW)
-        idx = np.argmin(NC2_row)
-        NC2_to_plot.append(NC2_row[idx])
-        lamW_to_plot.append(lamW_row[idx])
+    wandb.log({'C': {'best_c': best_c, 'best_k': best_k}})
 
-    data = [[a, b, c] for (a, b, c) in zip(lamH_to_plot, NC2_to_plot, lamW_to_plot)]
-    table = wandb.Table(data=data, columns=["lamH", "NC2", "lamW"])
+    all_WWT = np.concatenate(all_WWT, axis=0)
+    all_WWT_normalized = all_WWT / np.linalg.norm(all_WWT, axis=1, keepdims=True)
+
+    A_c = Sigma_sqrt - (best_c ** 0.5) * np.eye(2)
+    A_c = A_c / np.linalg.norm(A_c)
+    all_NCR3_old = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1)
+
+    A_k = best_k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - best_k * np.eye(2))
+    all_NCR3_new = np.linalg.norm(all_WWT - A_k.reshape(1, -1), axis=1)
+
+    ep_to_plot = np.arange(all_WWT.shape[0])
+    data = [[a, b, c] for (a, b, c) in zip(ep_to_plot, all_NCR3_old, all_NCR3_new)]
+    table = wandb.Table(data=data, columns=["epoch", "NRC3_old", "NRC3_new"])
     wandb.log(
         {
-            "NC2(c, lamH)": wandb.plot.line(
-                table, "lamH", "NC2", title="NC2 as a Function of c and lamH"
+            "NRC3_vs_epoch": wandb.plot.line(
+                table, "epoch", "NRC3_new", title="NRC3_vs_epoch"
             )
         }
     )
 
-    c_to_plot = np.linspace(0.000001, min_eigval, num=80)
-    lamH_to_plot = np.linspace(0.0001, 0.1, num=80)
-    NC2_to_plot = []
-    lamW_to_plot = []
-    for c in c_to_plot:
-        NC2_row = []
-        lamW_row = []
-        for lamH in lamH_to_plot:
-            A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
-            A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
-            diff_mat = WWT_normalized - A_normalized
-            lamW = c / lamH
-            NC2_row.append(np.linalg.norm(diff_mat).item())
-            lamW_row.append(lamW)
-        NC2_to_plot.append(NC2_row)
-        lamW_to_plot.append(lamW_row)
+    # c_to_plot = np.linspace(0.000001, min_eigval, num=1000)
+    # lamH_to_plot = np.linspace(0.0001, 0.1, num=1000)
+    # NC2_to_plot = []
+    # lamW_to_plot = []
+    # for lamH in lamH_to_plot:
+    #     NC2_row = []
+    #     lamW_row = []
+    #     for c in c_to_plot:
+    #         A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
+    #         A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
+    #         diff_mat = WWT_normalized - A_normalized
+    #         lamW = c / lamH
+    #         NC2_row.append(np.linalg.norm(diff_mat).item())
+    #         lamW_row.append(lamW)
+    #     idx = np.argmin(NC2_row)
+    #     NC2_to_plot.append(NC2_row[idx])
+    #     lamW_to_plot.append(lamW_row[idx])
+    #
+    # data = [[a, b, c] for (a, b, c) in zip(lamH_to_plot, NC2_to_plot, lamW_to_plot)]
+    # table = wandb.Table(data=data, columns=["lamH", "NC2", "lamW"])
+    # wandb.log(
+    #     {
+    #         "NC2(c, lamH)": wandb.plot.line(
+    #             table, "lamH", "NC2", title="NC2 as a Function of c and lamH"
+    #         )
+    #     }
+    # )
 
-    wandb.log({'NC2(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), NC2_to_plot, show_text=False)})
-    wandb.log({'lamW(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), lamW_to_plot, show_text=False)})
+    # c_to_plot = np.linspace(0.000001, min_eigval, num=80)
+    # lamH_to_plot = np.linspace(0.0001, 0.1, num=80)
+    # NC2_to_plot = []
+    # lamW_to_plot = []
+    # for c in c_to_plot:
+    #     NC2_row = []
+    #     lamW_row = []
+    #     for lamH in lamH_to_plot:
+    #         A = lamH * Sigma_sqrt / (c ** 0.5) - lamH * np.eye(2)
+    #         A_normalized = A / np.maximum(np.linalg.norm(A), 1e-6)
+    #         diff_mat = WWT_normalized - A_normalized
+    #         lamW = c / lamH
+    #         NC2_row.append(np.linalg.norm(diff_mat).item())
+    #         lamW_row.append(lamW)
+    #     NC2_to_plot.append(NC2_row)
+    #     lamW_to_plot.append(lamW_row)
+    #
+    # wandb.log({'NC2(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), NC2_to_plot, show_text=False)})
+    # wandb.log({'lamW(c, lamH)': wandb.plots.HeatMap(list(lamH_to_plot), list(c_to_plot), lamW_to_plot, show_text=False)})

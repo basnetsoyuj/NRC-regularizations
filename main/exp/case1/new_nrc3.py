@@ -22,18 +22,19 @@ def main():
 
     settings = [
         'env', '', ['swimmer', 'reacher'],
-        'mode', 'M', ['add_bias', 'no_relu', 'both', 'center', 'null'],
+        'mode', 'M', ['null', 'no_relu'],
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_ratio', 'DR', [0.1, 0.01, 0.001, 0.0001],
-        'arch', '', ['256-R-256-R|False'],
+        'data_size', 'DS', [20, 100],
+        'arch', '', ['256-R-256-R|True'],
         'normalize', '', ['none'],
 
+        'optimizer', 'O', ['sgd', 'adam'],
         'lamH', '', [-1],
-        'lamW', 'lamW', [1e-1, 9e-2, 8e-2, 7e-2, 6e-2, 5e-2, 4e-2, 3e-2, 2e-2,
+        'lamW', 'W', [1e-1, 9e-2, 8e-2, 7e-2, 6e-2, 5e-2, 4e-2, 3e-2, 2e-2,
                          1e-2, 9e-3, 8e-3, 7e-3, 6e-3, 5e-3, 4e-3, 3e-3, 2e-3,
-                         1e-3, 5e-4, 1e-4, 1e-5, ],
+                         1e-3, 8e-4, 5e-4, 1e-4, 1e-5, 0],
         'lr', '', [3e-4],
 
         'eval_freq', '', [1],
@@ -50,25 +51,14 @@ def main():
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
     config.num_eval_batch = 100
+    config.max_epochs = 300 if config.env == 'swimmer' else 2000
 
-    if config.mode == 'add_bias':
-        config.arch = '256-R-256-R|True'
-    elif config.mode == 'no_relu':
-        config.arch = '256-R-256|False'
-    elif config.mode == 'both':
+    if config.mode == 'no_relu':
         config.arch = '256-R-256|True'
-    elif config.mode == 'center':
-        config.normalize = 'center'
-    # elif config.mode == 'use_tanh':
-    #     config.arch = '256-T-256-T|False'
-    # elif config.mode == 'normal_y':
-    #     config.normalize = 'normal'
-    # elif config.mode == 'standard_y':
-    #     config.normalize = 'standard'
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.project = 'NC_case1'
-    config.group = 'zoom_in'
+    config.project = 'NC_new_NRC3'
+    config.group = 'new_nrc3'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
