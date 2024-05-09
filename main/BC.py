@@ -36,7 +36,7 @@ class TrainConfig:
     data_size: int = 10  # Number of episodes to use
     normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center'
 
-    arch: str = '256-R-256-R|False'  # Actor architecture
+    arch: str = '256-R-256-R|T'  # Actor architecture
     optimizer: str = 'adam'
     lamH: float = 1e-5  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
@@ -104,8 +104,8 @@ def compute_metrics(metrics, split, device):
         pca_for_H.fit(H_np)
     except Exception as e:
         print(e)
-        result['NRC1'] = -1
-        result['NRC2_new'] = -1
+        result['NRC1'] = -0.5
+        result['NRC2_new'] = -0.5
     else:
         H_pca = pca_for_H.components_[:2, :]  # First two principal components
 
@@ -257,7 +257,7 @@ class MujocoBuffer(Dataset):
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
                 if split == 'test':
-                    data_size /= 5
+                    data_size = 2
                 self.size = data_size * 1000 if env == 'swimmer' else data_size * 50
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
@@ -340,12 +340,12 @@ class MujocoBuffer(Dataset):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|False'):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T'):
         super(Actor, self).__init__()
 
         arch, use_bias = arch.split('|')
         arch = arch.split('-')
-        use_bias = True if use_bias == 'True' else False
+        use_bias = True if use_bias == 'T' else False
 
         in_dim = state_dim
         module_list = []
@@ -354,6 +354,8 @@ class Actor(nn.Module):
                 module_list.append(nn.ReLU())
             elif layer == 'T':
                 module_list.append(nn.Tanh())
+            elif layer == 'G':
+                module_list.append(nn.GELU())
             else:
                 out_dim = int(layer)
                 module_list.append(nn.Linear(in_dim, out_dim))
@@ -588,8 +590,9 @@ def run_BC(config: TrainConfig):
         NRC3_old_to_plot.append(np.linalg.norm(diff_mat).item())
     best_c = c_to_plot[np.argmin(NRC3_old_to_plot)]
 
-    ub_for_k = 1.2 * (min_eigval/max(config.lamW, 1e-10))**0.5
-    k_to_plot = np.linspace(0, ub_for_k, num=1000)
+    rescale = 1.0
+    ub_for_k = rescale * (min_eigval/max(config.lamW, 1e-10))**0.5
+    k_to_plot = np.linspace(0, ub_for_k, num=2000)
     NRC3_new_to_plot = []
     for k in k_to_plot:
         A = k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - k * np.eye(2))
