@@ -29,7 +29,7 @@ def main():
         'arch', '', ['256-R-256-R|T'],
         'normalize', '', ['none'],
 
-        'optimizer', 'O', ['sgd', 'adam'],
+        'optimizer', 'O', ['sgd'],
         'lamH', '', [-1],
         'lamW', 'W', [5e-1, 1e-1, 8e-2, 6e-2, 4e-2, 2e-2,
                       1e-2, 9e-3, 8e-3, 7e-3, 6e-3, 5e-3, 4e-3, 3e-3, 2e-3,
@@ -52,8 +52,9 @@ def main():
     config.num_eval_batch = 100
     config.max_epochs = 300 if config.env == 'swimmer' else 4000
     if config.optimizer == 'sgd':
-        config.max_epochs = 10000 if config.env == 'swimmer' else 100000
-        config.eval_freq = 50
+        config.max_epochs = int(1e7) if config.env == 'swimmer' else int(1e8)
+        config.max_epochs //= config.data_size
+        config.eval_freq = 5000 if config.env == 'swimmer' else int(5e4)
 
     if config.mode == 'no_relu':
         config.arch = '256-R-256|T'
@@ -61,7 +62,7 @@ def main():
         config.arch = '256-G-256-G|T'
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.project = 'NC_sgd'
+    config.project = 'NC_long_sgd'
     config.group = 'new_nrc3'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
