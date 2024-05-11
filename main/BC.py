@@ -129,16 +129,16 @@ def compute_metrics(metrics, split, device):
             W_proj_PCA = W @ P
             result['NRC2_new'] = torch.norm(W - W_proj_PCA).item()
 
-    # NRC2_old
-    try:
-        inverse_mat = torch.inverse(W @ W.T)
-    except Exception as e:
-        print(e)
-        result['NRC2_old'] = -1
-    else:
-        H_proj_W = H @ W.T @ inverse_mat @ W
-        result['NRC2_old'] = torch.norm(H - H_proj_W).item()
-        del H_proj_W
+    # # NRC2_old
+    # try:
+    #     inverse_mat = torch.inverse(W @ W.T)
+    # except Exception as e:
+    #     print(e)
+    #     result['NRC2_old'] = -1
+    # else:
+    #     H_proj_W = H @ W.T @ inverse_mat @ W
+    #     result['NRC2_old'] = torch.norm(H - H_proj_W).item()
+    #     del H_proj_W
 
     # # Projection error with Gram-Schmidt
     # U = gram_schmidt(W)
