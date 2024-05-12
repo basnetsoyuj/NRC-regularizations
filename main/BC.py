@@ -37,7 +37,7 @@ class TrainConfig:
     normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center'
 
     arch: str = '256-R-256-R|T'  # Actor architecture
-    optimizer: str = 'adam'
+    optimizer: str = 'sgd'
     lamH: float = 1e-5  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
     lr: float = 3e-4
@@ -105,7 +105,7 @@ def compute_metrics(metrics, split, device):
     except Exception as e:
         print(e)
         result['NRC1'] = -0.5
-        result['NRC2_new'] = -0.5
+        result['NRC2'] = -0.5
     else:
         H_pca = pca_for_H.components_[:2, :]  # First two principal components
 
@@ -114,7 +114,7 @@ def compute_metrics(metrics, split, device):
         except Exception as e:
             print(e)
             result['NRC1'] = -1
-            result['NRC2_new'] = -1
+            result['NRC2'] = -1
         else:
             P = H_pca.T @ inverse_mat @ H_pca
             del pca_for_H
@@ -127,7 +127,7 @@ def compute_metrics(metrics, split, device):
 
             P = torch.tensor(P, dtype=torch.float32, device=device)
             W_proj_PCA = W @ P
-            result['NRC2_new'] = torch.norm(W - W_proj_PCA).item()
+            result['NRC2'] = torch.norm(W - W_proj_PCA).item()
 
     # # NRC2_old
     # try:
@@ -257,8 +257,9 @@ class MujocoBuffer(Dataset):
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
                 if split == 'test':
-                    data_size = 2
-                self.size = data_size * 1000 if env == 'swimmer' else data_size * 50
+                    data_size //= 5
+                # self.size = data_size * 1000 if env == 'swimmer' else data_size * 50
+                self.size = data_size
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
@@ -292,7 +293,8 @@ class MujocoBuffer(Dataset):
 
     def get_theory_stats(self):
         Y = self.actions.T
-        Y = Y - Y.mean(axis=1, keepdims=True)
+        Y_mean = Y.mean(axis=1, keepdims=True)
+        Y = Y - Y_mean
         M = Y.shape[1]
         Sigma = Y @ Y.T / M
 
@@ -325,6 +327,8 @@ class MujocoBuffer(Dataset):
             'sigma12': Sigma_sqrt[0, 1],
             'sigma21': Sigma_sqrt[1, 0],
             'sigma22': Sigma_sqrt[1, 1],
+            'm1': Y_mean[0, 0],
+            'm2': Y_mean[1, 0]
         }
 
     def __len__(self):
@@ -547,7 +551,6 @@ def run_BC(config: TrainConfig):
     wandb.log({'train': train_log,
                'validation': val_log,
                'C': train_theory_stats,
-               # 'valConstant': val_theory_states
                })
 
     all_WWT = []
@@ -581,54 +584,54 @@ def run_BC(config: TrainConfig):
     Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
 
     c_to_plot = np.linspace(0, min_eigval, num=1000)
-    NRC3_old_to_plot = []
+    NRC3_to_plot = []
     for c in c_to_plot:
         c_sqrt = c ** 0.5
         A = Sigma_sqrt - c_sqrt * np.eye(2)
         A_normalized = A / np.linalg.norm(A)
         diff_mat = WWT_normalized - A_normalized
-        NRC3_old_to_plot.append(np.linalg.norm(diff_mat).item())
-    best_c = c_to_plot[np.argmin(NRC3_old_to_plot)]
+        NRC3_to_plot.append(np.linalg.norm(diff_mat).item())
+    best_c = c_to_plot[np.argmin(NRC3_to_plot)]
 
-    rescale = 1.0
-    ub_for_k = rescale * (min_eigval/max(config.lamW, 1e-10))**0.5
-    k_to_plot = np.linspace(0, ub_for_k, num=2000)
-    NRC3_new_to_plot = []
-    for k in k_to_plot:
-        A = k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - k * np.eye(2))
-        diff_mat = WWT - A
-        NRC3_new_to_plot.append(np.linalg.norm(diff_mat).item())
-    best_k = k_to_plot[np.argmin(NRC3_new_to_plot)]
+    # rescale = 1.0
+    # ub_for_k = rescale * (min_eigval/max(config.lamW, 1e-10))**0.5
+    # k_to_plot = np.linspace(0, ub_for_k, num=2000)
+    # NRC3_new_to_plot = []
+    # for k in k_to_plot:
+    #     A = k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - k * np.eye(2))
+    #     diff_mat = WWT - A
+    #     NRC3_new_to_plot.append(np.linalg.norm(diff_mat).item())
+    # best_k = k_to_plot[np.argmin(NRC3_new_to_plot)]
 
-    data = [[a, b, c, d] for (a, b, c, d) in zip(c_to_plot, NRC3_old_to_plot, k_to_plot, NRC3_new_to_plot)]
-    table = wandb.Table(data=data, columns=["c", "NRC3_old", "k", "NRC3_new"])
+    data = [[a, b] for (a, b) in zip(c_to_plot, NRC3_to_plot)]
+    table = wandb.Table(data=data, columns=["c", "NRC3"])
     wandb.log(
         {
-            "NRC3": wandb.plot.line(
-                table, "k", "NRC3_new", title="NRC3"
+            "NRC3_vs_c": wandb.plot.line(
+                table, "c", "NRC3", title="NRC3_vs_c"
             )
         }
     )
 
-    wandb.log({'C': {'best_c': best_c, 'best_k': best_k}})
+    wandb.log({'C': {'best_c': best_c}})
 
     all_WWT = np.concatenate(all_WWT, axis=0)
     all_WWT_normalized = all_WWT / np.linalg.norm(all_WWT, axis=1, keepdims=True)
 
     A_c = Sigma_sqrt - (best_c ** 0.5) * np.eye(2)
     A_c = A_c / np.linalg.norm(A_c)
-    all_NCR3_old = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1)
+    all_NCR3 = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1)
 
-    A_k = best_k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - best_k * np.eye(2))
-    all_NCR3_new = np.linalg.norm(all_WWT - A_k.reshape(1, -1), axis=1)
+    # A_k = best_k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - best_k * np.eye(2))
+    # all_NCR3_new = np.linalg.norm(all_WWT - A_k.reshape(1, -1), axis=1)
 
     ep_to_plot = np.arange(all_WWT.shape[0])
-    data = [[a, b, c] for (a, b, c) in zip(ep_to_plot, all_NCR3_old, all_NCR3_new)]
-    table = wandb.Table(data=data, columns=["epoch", "NRC3_old", "NRC3_new"])
+    data = [[a, b] for (a, b) in zip(ep_to_plot, all_NCR3)]
+    table = wandb.Table(data=data, columns=["epoch", "NRC3"])
     wandb.log(
         {
             "NRC3_vs_epoch": wandb.plot.line(
-                table, "epoch", "NRC3_new", title="NRC3_vs_epoch"
+                table, "epoch", "NRC3", title="NRC3_vs_epoch"
             )
         }
     )
