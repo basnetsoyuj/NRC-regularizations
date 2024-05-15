@@ -554,6 +554,9 @@ def run_BC(config: TrainConfig):
                })
 
     all_WWT = []
+    W = actor.W.weight.detach().clone().cpu().numpy()
+    WWT = W @ W.T
+    all_WWT.append(WWT.reshape(1, -1))
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
         count = 0

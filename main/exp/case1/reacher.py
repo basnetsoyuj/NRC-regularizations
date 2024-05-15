@@ -20,7 +20,7 @@ def main():
     setting = args.setting
 
     settings = [
-        'env', 'E', ['swimmer', 'reacher'],
+        'env', '', ['reacher'],
         'mode', 'M', ['null', 'no_relu', 'gelu'],
 
         'max_epochs', '', [250],
@@ -31,10 +31,10 @@ def main():
 
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
-        'lamW', 'W', [1e-1, 8e-2, 6e-2, 4e-2, 2e-2,
-                      1e-2, 8e-3, 6e-3, 4e-3, 2e-3,
-                      1e-3, 5e-4, 1e-5],
-        'lr', 'lr', [3e-2, 3e-3, 3e-4],
+        'lamW', 'W', [5e-2, 1e-2,
+                      8e-3, 6e-3, 4e-3, 3e-3, 2.5e-3, 2e-3, 1.5e-3, 1e-3,
+                      9e-4, 5e-4, 1e-4, 5e-5, 0],
+        'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
         'seed', '', [0]
@@ -52,14 +52,14 @@ def main():
     config.num_eval_batch = 100
 
     if config.data_size == 1000:
-        config.max_epochs = int(2e6)
+        config.max_epochs = int(5e5)
     elif config.data_size == 10000:
-        config.max_epochs = int(2e5)
+        config.max_epochs = int(5e4)
     elif config.data_size == 100000:
-        config.max_epochs = int(2e4)
+        config.max_epochs = int(5e3)
 
-    num_evals = 400
-    config.eval_freq = config.data_size // num_evals
+    num_evals = 200
+    config.eval_freq = config.max_epochs // num_evals
 
     if config.mode == 'no_relu':
         config.arch = '256-R-256-R-256|T'
@@ -67,7 +67,7 @@ def main():
         config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.project = 'NC_faster_sgd'
+    config.project = 'NC_shorter_sgd'
     config.group = 'explore'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
