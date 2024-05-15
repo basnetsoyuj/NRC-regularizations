@@ -28,3 +28,17 @@ for env_name in MAZE_ENVIRONMENT_LIST:
         print(f'Save dataset {env_name} to location: {file_path}.')
     except Exception as e:
         print(e)
+
+import pickle
+
+with open('hopper_expert.pkl', 'rb') as f:
+    dataset = pickle.load(f)
+
+size = dataset['observations'].shape[0]
+
+with open('hopper_train.pkl', 'wb') as f:
+    train_split = {k: v[:int(size*0.9), :] for k, v in dataset.item()}
+    pickle.dump(train_split, f)
+with open('hopper_test.pkl', 'wb') as f:
+    test_split = {k: v[int(size*0.9):, :] for k, v in dataset.item()}
+    pickle.dump(test_split, f)

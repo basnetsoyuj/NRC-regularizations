@@ -88,18 +88,31 @@ def compute_metrics(metrics, split, device):
     if split == 'test':
         return result
 
+    y_dim = y.shape[1]
+
     # WWT
     WWT = W @ W.T
-    result['W11'] = WWT[0, 0].item()
-    result['W22'] = WWT[1, 1].item()
-    result['W12'] = WWT[0, 1].item()
-    result['cosSIM_W12'] = F.cosine_similarity(W[0], W[1], dim=0).item()
+    if y_dim == 2:
+        result['W11'] = WWT[0, 0].item()
+        result['W22'] = WWT[1, 1].item()
+        result['W12'] = WWT[0, 1].item()
+        result['cosSIM_W12'] = F.cosine_similarity(W[0], W[1], dim=0).item()
+    elif y_dim == 3:
+        result['W11'] = WWT[0, 0].item()
+        result['W22'] = WWT[1, 1].item()
+        result['W33'] = WWT[2, 2].item()
+        result['W12'] = WWT[0, 1].item()
+        result['W13'] = WWT[0, 2].item()
+        result['W23'] = WWT[1, 2].item()
+        result['cosSIM_W12'] = F.cosine_similarity(W[0], W[1], dim=0).item()
+        result['cosSIM_W13'] = F.cosine_similarity(W[0], W[2], dim=0).item()
+        result['cosSIM_W23'] = F.cosine_similarity(W[1], W[2], dim=0).item()
     result['WWT_norm'] = torch.norm(WWT).item()
     del WWT
 
     # NRC1
     H_np = H.cpu().numpy()
-    pca_for_H = PCA(n_components=2)
+    pca_for_H = PCA(n_components=y_dim)
     try:
         pca_for_H.fit(H_np)
     except Exception as e:
@@ -107,7 +120,7 @@ def compute_metrics(metrics, split, device):
         result['NRC1'] = -0.5
         result['NRC2'] = -0.5
     else:
-        H_pca = pca_for_H.components_[:2, :]  # First two principal components
+        H_pca = pca_for_H.components_[:y_dim, :]  # First two principal components
 
         try:
             inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
@@ -293,6 +306,7 @@ class MujocoBuffer(Dataset):
 
     def get_theory_stats(self):
         Y = self.actions.T
+        y_dim = Y.shape[0]
         Y_mean = Y.mean(axis=1, keepdims=True)
         Y = Y - Y_mean
         M = Y.shape[1]
@@ -307,29 +321,49 @@ class MujocoBuffer(Dataset):
         min_eigval = eig_vals[0]
         max_eigval = eig_vals[-1]
 
-        mu11 = Sigma[0, 0]
-        mu12 = Sigma[0, 1]
-        mu22 = Sigma[1, 1]
+        # mu11 = Sigma[0, 0]
+        # mu12 = Sigma[0, 1]
+        # mu22 = Sigma[1, 1]
+        # sqrt = np.sqrt((mu22 - mu11) ** 2 + 4 * mu12 ** 2)
+        # gamma1 = (mu22 - mu11 + sqrt) / (2 * mu12)
+        # gamma2 = (mu22 - mu11 - sqrt) / (2 * mu12)
 
-        sqrt = np.sqrt((mu22 - mu11) ** 2 + 4 * mu12 ** 2)
-        gamma1 = (mu22 - mu11 + sqrt) / (2 * mu12)
-        gamma2 = (mu22 - mu11 - sqrt) / (2 * mu12)
-
-        return {
-            'mu11': Sigma[0, 0],
-            'mu12': Sigma[0, 1],
-            'mu22': Sigma[1, 1],
-            'min_eigval': min_eigval,
-            'max_eigval': max_eigval,
-            'gamma1': gamma1,
-            'gamma2': gamma2,
-            'sigma11': Sigma_sqrt[0, 0],
-            'sigma12': Sigma_sqrt[0, 1],
-            'sigma21': Sigma_sqrt[1, 0],
-            'sigma22': Sigma_sqrt[1, 1],
-            'm1': Y_mean[0, 0],
-            'm2': Y_mean[1, 0]
-        }
+        if y_dim == 2:
+            return {
+                'mu11': Sigma[0, 0],
+                'mu12': Sigma[0, 1],
+                'mu22': Sigma[1, 1],
+                'min_eigval': min_eigval,
+                'max_eigval': max_eigval,
+                # 'gamma1': gamma1,
+                # 'gamma2': gamma2,
+                'sigma11': Sigma_sqrt[0, 0],
+                'sigma12': Sigma_sqrt[0, 1],
+                'sigma21': Sigma_sqrt[1, 0],
+                'sigma22': Sigma_sqrt[1, 1],
+                'm1': Y_mean[0, 0],
+                'm2': Y_mean[1, 0]
+            }, Sigma, Sigma_sqrt
+        elif y_dim == 3:
+            return {
+                # 'mu11': Sigma[0, 0],
+                # 'mu22': Sigma[1, 1],
+                # 'mu33': Sigma[2, 2],
+                # 'mu12': Sigma[0, 1],
+                # 'mu12': Sigma[0, 1],
+                # 'mu12': Sigma[0, 1],
+                'min_eigval': min_eigval,
+                'max_eigval': max_eigval,
+                # 'gamma1': gamma1,
+                # 'gamma2': gamma2,
+                # 'sigma11': Sigma_sqrt[0, 0],
+                # 'sigma12': Sigma_sqrt[0, 1],
+                # 'sigma21': Sigma_sqrt[1, 0],
+                # 'sigma22': Sigma_sqrt[1, 1],
+                'm1': Y_mean[0, 0],
+                'm2': Y_mean[1, 0],
+                'm3': Y_mean[2, 0]
+            }, Sigma, Sigma_sqrt
 
     def __len__(self):
         return self.size
@@ -538,7 +572,7 @@ def run_BC(config: TrainConfig):
     wandb_init(asdict(config))
 
     # TODO: fix and optimize wandb log.
-    train_theory_stats = train_dataset.get_theory_stats()
+    train_theory_stats, Sigma, Sigma_sqrt = train_dataset.get_theory_stats()
     # val_theory_states = val_dataset.get_theory_stats()
     if config.lamH != -1 and config.lamW != 0:
         for d in [train_theory_stats]:
@@ -584,13 +618,13 @@ def run_BC(config: TrainConfig):
     WWT = W @ W.T
     WWT_normalized = WWT / np.linalg.norm(WWT)
     min_eigval = train_theory_stats['min_eigval']
-    Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
+    # Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
 
     c_to_plot = np.linspace(0, min_eigval, num=1000)
     NRC3_to_plot = []
     for c in c_to_plot:
         c_sqrt = c ** 0.5
-        A = Sigma_sqrt - c_sqrt * np.eye(2)
+        A = Sigma_sqrt - c_sqrt * np.eye(Sigma_sqrt.shape[0])
         A_normalized = A / np.linalg.norm(A)
         diff_mat = WWT_normalized - A_normalized
         NRC3_to_plot.append(np.linalg.norm(diff_mat).item())
@@ -621,7 +655,7 @@ def run_BC(config: TrainConfig):
     all_WWT = np.concatenate(all_WWT, axis=0)
     all_WWT_normalized = all_WWT / np.linalg.norm(all_WWT, axis=1, keepdims=True)
 
-    A_c = Sigma_sqrt - (best_c ** 0.5) * np.eye(2)
+    A_c = Sigma_sqrt - (best_c ** 0.5) * np.eye(Sigma_sqrt.shape[0])
     A_c = A_c / np.linalg.norm(A_c)
     all_NCR3 = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1)
 
