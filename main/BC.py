@@ -77,7 +77,7 @@ def gram_schmidt(W):
     return U
 
 
-def compute_metrics(metrics, split, device):
+def compute_metrics(metrics, split, device, extra_info=None):
     result = {}
     y = metrics['targets']  # (B,2)
     yhat = metrics['outputs']  # (B,2)
@@ -163,6 +163,16 @@ def compute_metrics(metrics, split, device):
     # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
     result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
     del H_proj
+
+    if extra_info:
+        WWT = W @ W.T
+        WWT_normalized = WWT / torch.norm(WWT)
+
+        A_case2 = extra_info['A_case2']
+        A_case2 = torch.tensor(A_case2, dtype=torch.float32, device=device)
+        A_case2_normalized = A_case2 / torch.norm(A_case2)
+        result['NRC3'] = torch.norm(WWT_normalized - A_case2_normalized).item()
+        result['NRC3_unnorm'] = torch.norm(WWT - A_case2).item()
 
     # # MSE between cosine similarities of embeddings and targets with norm
     # cos_H_norm = cosine_similarity_gpu(H, H)
@@ -478,7 +488,7 @@ class BC:
         return log_dict
 
     @torch.no_grad()
-    def NC_eval(self, dataloader, split):
+    def NC_eval(self, dataloader, split, extra_info=None):
         self.actor.eval()
         y = torch.empty((0,), device=self.device)
         H = torch.empty((0,), device=self.device)
@@ -501,7 +511,7 @@ class BC:
                'outputs': Wh,
                'weights': W
                }
-        log_dict = compute_metrics(res, split, self.device)
+        log_dict = compute_metrics(res, split, self.device, extra_info=extra_info)
         self.actor.train()
 
         return log_dict
@@ -577,13 +587,15 @@ def run_BC(config: TrainConfig):
     # TODO: fix and optimize wandb log.
     train_theory_stats, Sigma, Sigma_sqrt = train_dataset.get_theory_stats()
     # val_theory_states = val_dataset.get_theory_stats()
+    A_case2 = None
     if config.lamH != -1 and config.lamW != 0:
         for d in [train_theory_stats]:
-            d['A11'] = (config.lamH / config.lamW) ** 0.5 * d['sigma11'] - config.lamH
-            d['A22'] = (config.lamH / config.lamW) ** 0.5 * d['sigma22'] - config.lamH
-            d['A12'] = (config.lamH / config.lamW) ** 0.5 * d['sigma12']
+            A_case2 = (config.lamH / config.lamW) ** 0.5 * Sigma_sqrt - config.lamH * np.eye(Sigma_sqrt.shape[0])
+            d['A11'] = A_case2[0, 0]
+            d['A22'] = A_case2[1, 1]
+            d['A12'] = A_case2[0, 1]
 
-    train_log = trainer.NC_eval(train_loader, split='train')
+    train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
     val_log = trainer.NC_eval(val_loader, split='test')
     wandb.log({'train': train_log,
                'validation': val_log,
@@ -607,7 +619,7 @@ def run_BC(config: TrainConfig):
             W = actor.W.weight.detach().clone().cpu().numpy()
             WWT = W @ W.T
             all_WWT.append(WWT.reshape(1, -1))
-            train_log = trainer.NC_eval(train_loader, split='train')
+            train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
             val_log = trainer.NC_eval(val_loader, split='test')
             wandb.log({'train_mse_loss': epoch_train_loss,
                        'train': train_log,
@@ -615,6 +627,44 @@ def run_BC(config: TrainConfig):
                        'C': train_theory_stats,
                        # 'valConstant': val_theory_states
                        })
+
+    if config.env in ['reacher', 'swimmer']:
+        with torch.no_grad():
+            actor.eval()
+            y = torch.empty((0,), device=config.device)
+            H = torch.empty((0,), device=config.device)
+            Wh = torch.empty((0,), device=config.device)
+            W = actor.W.weight.detach().clone()
+
+            for i, batch in enumerate(train_loader):
+                states, actions = batch['states'], batch['actions']
+                features = actor.get_feature(states)
+                preds = actor.project(features)
+
+                y = torch.cat((y, actions), dim=0)
+                H = torch.cat((H, features), dim=0)
+                Wh = torch.cat((Wh, preds), dim=0)
+
+        U = gram_schmidt(W)
+        coeff = H @ U.T
+        w1 = coeff[:, 0]
+        w2 = coeff[:, 1]
+        y1y2 = y[:, 0] / y[:, 1]
+        data = [[a, b, c] for (a, b, c) in zip(w1, w2, y1y2)]
+        table = wandb.Table(data=data, columns=["w1", "w2", 'y1/y2'])
+        try:
+            wandb.log({'Residual_table': table})
+        except Exception as e:
+            print(e)
+
+        try:
+            wandb.log(
+                {'Residual Plot': wandb.plots.HeatMap(list(w1), list(w2), y1y2, show_text=False)})
+        except Exception as e:
+            print(e)
+
+    if A_case2:
+        return
 
     # NRC3
     W = actor.W.weight.detach().clone().cpu().numpy()
