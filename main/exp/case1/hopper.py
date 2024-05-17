@@ -25,15 +25,15 @@ def main():
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_size', 'DS', [1000, 10000, 100000],
+        'data_size', 'DS', [5000],
         'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
-        'lamW', 'W', [1e-1, 8e-2, 6e-2, 4e-2, 2e-2, 1e-2,
-                      8e-3, 6e-3, 4e-3, 2e-3, 1e-3,
-                      5e-4, 1e-4, 5e-5, 0],
+        'lamW', 'W', [2e-2, 1.5e-2, 1e-2,
+                      9e-3, 8e-3, 6e-3, 4e-3, 3e-3, 2e-3, 1.5e-3, 1e-3,
+                      9e-4, 1e-4, 5e-5, 0],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
@@ -52,11 +52,11 @@ def main():
     config.num_eval_batch = 100
 
     if config.data_size == 1000:
-        config.max_epochs = int(5e5)
+        config.max_epochs = int(8e5)
     elif config.data_size == 10000:
-        config.max_epochs = int(5e4)
+        config.max_epochs = int(8e4)
     elif config.data_size == 100000:
-        config.max_epochs = int(5e3)
+        config.max_epochs = int(8e3)
 
     num_evals = 200
     config.eval_freq = config.max_epochs // num_evals
