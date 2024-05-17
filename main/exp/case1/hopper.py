@@ -21,11 +21,11 @@ def main():
 
     settings = [
         'env', 'E', ['hopper'],
-        'mode', 'M', ['null', 'no_relu', 'gelu'],
+        'mode', 'M', ['null'],
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_size', 'DS', [5000],
+        'data_size', 'DS', [5000, 10000],
         'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
@@ -53,6 +53,8 @@ def main():
 
     if config.data_size == 1000:
         config.max_epochs = int(8e5)
+    elif config.data_size == 5000:
+        config.max_epochs = int(2e5)
     elif config.data_size == 10000:
         config.max_epochs = int(8e4)
     elif config.data_size == 100000:
@@ -67,7 +69,7 @@ def main():
         config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = '/NC_regression/dataset/mujoco'
-    config.project = 'NC_shorter_sgd'
+    config.project = 'NC_5000_sgd'
     config.group = 'explore'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 

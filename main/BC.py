@@ -64,12 +64,15 @@ def cosine_similarity_gpu(a, b):
 
 
 def gram_schmidt(W):
+    dim = W.shape[0]
+
     U = torch.empty_like(W)
     U[0, :] = W[0, :] / torch.norm(W[0, :], p=2)
 
-    proj = torch.dot(U[0, :], W[1, :]) * U[0, :]
-    ortho_vector = W[1, :] - proj
-    U[1, :] = ortho_vector / torch.norm(ortho_vector, p=2)
+    for i in range(1, dim):
+        proj = torch.dot(U[i-1, :], W[i, :]) * U[i-1, :]
+        ortho_vector = W[i, :] - proj
+        U[i, :] = ortho_vector / torch.norm(ortho_vector, p=2)
 
     return U
 
@@ -134,7 +137,7 @@ def compute_metrics(metrics, split, device):
             del H_pca
             del inverse_mat
             H_proj_PCA = H_np @ P
-            result['NRC1'] = np.linalg.norm(H_np - H_proj_PCA).item()
+            result['NRC1'] = (np.linalg.norm(H_np - H_proj_PCA)**2 / B).item()
             del H_np
             del H_proj_PCA
 
@@ -142,24 +145,24 @@ def compute_metrics(metrics, split, device):
             W_proj_PCA = W @ P
             result['NRC2'] = torch.norm(W - W_proj_PCA).item()
 
-    # # NRC2_old
-    # try:
-    #     inverse_mat = torch.inverse(W @ W.T)
-    # except Exception as e:
-    #     print(e)
-    #     result['NRC2_old'] = -1
-    # else:
-    #     H_proj_W = H @ W.T @ inverse_mat @ W
-    #     result['NRC2_old'] = torch.norm(H - H_proj_W).item()
-    #     del H_proj_W
+    # NRC2_old
+    try:
+        inverse_mat = torch.inverse(W @ W.T)
+    except Exception as e:
+        print(e)
+        result['NRC2_old'] = -1
+    else:
+        H_proj_W = H @ W.T @ inverse_mat @ W
+        result['NRC2_old'] = (torch.norm(H - H_proj_W)**2 / B).item()
+        del H_proj_W
 
-    # # Projection error with Gram-Schmidt
-    # U = gram_schmidt(W)
-    # P_E = torch.mm(U.T, U)
-    # H_proj = torch.mm(H, P_E)
-    # # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
-    # result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
-    # del H_proj
+    # Projection error with Gram-Schmidt
+    U = gram_schmidt(W)
+    P_E = torch.mm(U.T, U)
+    H_proj = torch.mm(H, P_E)
+    # H_projected_E_norm = F.normalize(torch.tensor(H_projected_E).float().to(device), p=2, dim=1)
+    result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
+    del H_proj
 
     # # MSE between cosine similarities of embeddings and targets with norm
     # cos_H_norm = cosine_similarity_gpu(H, H)
@@ -349,9 +352,9 @@ class MujocoBuffer(Dataset):
                 # 'mu11': Sigma[0, 0],
                 # 'mu22': Sigma[1, 1],
                 # 'mu33': Sigma[2, 2],
-                # 'mu12': Sigma[0, 1],
-                # 'mu12': Sigma[0, 1],
-                # 'mu12': Sigma[0, 1],
+                'mu12': Sigma[0, 1],
+                'mu13': Sigma[0, 2],
+                'mu23': Sigma[1, 2],
                 'min_eigval': min_eigval,
                 'max_eigval': max_eigval,
                 # 'gamma1': gamma1,
