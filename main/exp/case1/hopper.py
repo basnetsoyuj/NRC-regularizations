@@ -25,15 +25,14 @@ def main():
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_size', 'DS', [5000, 10000],
+        'data_size', 'DS', [1000, 5000, 10000],
         'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
-        'lamW', 'W', [2e-2, 1.5e-2, 1e-2,
-                      9e-3, 8e-3, 6e-3, 4e-3, 3e-3, 2e-3, 1.5e-3, 1e-3,
-                      9e-4, 1e-4, 5e-5, 0],
+        'lamW', 'W', [2e-2, 1.5e-2, 1e-2, 9.5e-2,
+                      9e-3, 8.5e-3, 8e-3, 6e-3],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
@@ -52,11 +51,11 @@ def main():
     config.num_eval_batch = 100
 
     if config.data_size == 1000:
-        config.max_epochs = int(8e5)
+        config.max_epochs = int(1e5)
     elif config.data_size == 5000:
-        config.max_epochs = int(2e5)
+        config.max_epochs = int(2e4)
     elif config.data_size == 10000:
-        config.max_epochs = int(8e4)
+        config.max_epochs = int(1e4)
     elif config.data_size == 100000:
         config.max_epochs = int(8e3)
 
@@ -70,7 +69,7 @@ def main():
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_5000_sgd'
-    config.group = 'explore'
+    config.group = 'patch1'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)

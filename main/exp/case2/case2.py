@@ -25,7 +25,7 @@ def main():
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
-        'data_size', 'DS', [5000],
+        'data_size', 'DS', [1000],
         'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
