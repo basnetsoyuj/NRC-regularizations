@@ -164,7 +164,7 @@ def compute_metrics(metrics, split, device, extra_info=None):
     result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
     del H_proj
 
-    if extra_info:
+    if extra_info is not None:
         WWT = W @ W.T
         WWT_normalized = WWT / torch.norm(WWT)
 
@@ -595,7 +595,7 @@ def run_BC(config: TrainConfig):
             d['A22'] = A_case2[1, 1]
             d['A12'] = A_case2[0, 1]
 
-    train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
+    train_log = trainer.NC_eval(train_loader, split='train', extra_info=A_case2)
     val_log = trainer.NC_eval(val_loader, split='test')
     wandb.log({'train': train_log,
                'validation': val_log,
@@ -619,7 +619,7 @@ def run_BC(config: TrainConfig):
             W = actor.W.weight.detach().clone().cpu().numpy()
             WWT = W @ W.T
             all_WWT.append(WWT.reshape(1, -1))
-            train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
+            train_log = trainer.NC_eval(train_loader, split='train', extra_info=A_case2)
             val_log = trainer.NC_eval(val_loader, split='test')
             wandb.log({'train_mse_loss': epoch_train_loss,
                        'train': train_log,
@@ -659,11 +659,11 @@ def run_BC(config: TrainConfig):
 
         try:
             wandb.log(
-                {'Residual Plot': wandb.plots.HeatMap(list(w1), list(w2), y1y2, show_text=False)})
+                {'Residual Plot': wandb.plots.HeatMap(list(w1), list(w2), y1y2.cpu().numpy(), show_text=False)})
         except Exception as e:
             print(e)
 
-    if A_case2:
+    if config.lamH != -1:
         return
 
     # NRC3
