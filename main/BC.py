@@ -164,15 +164,16 @@ def compute_metrics(metrics, split, device, extra_info=None):
     result['proj_error_H2W'] = F.mse_loss(H_proj, H).item()
     del H_proj
 
-    if extra_info is not None:
-        WWT = W @ W.T
-        WWT_normalized = WWT / torch.norm(WWT)
+    if extra_info:
+        if extra_info.get('A_case2') is not None:
+            WWT = W @ W.T
+            WWT_normalized = WWT / torch.norm(WWT)
 
-        A_case2 = extra_info['A_case2']
-        A_case2 = torch.tensor(A_case2, dtype=torch.float32, device=device)
-        A_case2_normalized = A_case2 / torch.norm(A_case2)
-        result['NRC3'] = torch.norm(WWT_normalized - A_case2_normalized).item()
-        result['NRC3_unnorm'] = torch.norm(WWT - A_case2).item()
+            A_case2 = extra_info
+            A_case2 = torch.tensor(A_case2, dtype=torch.float32, device=device)
+            A_case2_normalized = A_case2 / torch.norm(A_case2)
+            result['NRC3'] = torch.norm(WWT_normalized - A_case2_normalized).item()
+            result['NRC3_unnorm'] = torch.norm(WWT - A_case2).item()
 
     # # MSE between cosine similarities of embeddings and targets with norm
     # cos_H_norm = cosine_similarity_gpu(H, H)
@@ -359,9 +360,9 @@ class MujocoBuffer(Dataset):
             }, Sigma, Sigma_sqrt
         elif y_dim == 3:
             return {
-                # 'mu11': Sigma[0, 0],
-                # 'mu22': Sigma[1, 1],
-                # 'mu33': Sigma[2, 2],
+                'mu11': Sigma[0, 0],
+                'mu22': Sigma[1, 1],
+                'mu33': Sigma[2, 2],
                 'mu12': Sigma[0, 1],
                 'mu13': Sigma[0, 2],
                 'mu23': Sigma[1, 2],
@@ -595,7 +596,7 @@ def run_BC(config: TrainConfig):
             d['A22'] = A_case2[1, 1]
             d['A12'] = A_case2[0, 1]
 
-    train_log = trainer.NC_eval(train_loader, split='train', extra_info=A_case2)
+    train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
     val_log = trainer.NC_eval(val_loader, split='test')
     wandb.log({'train': train_log,
                'validation': val_log,
@@ -619,7 +620,7 @@ def run_BC(config: TrainConfig):
             W = actor.W.weight.detach().clone().cpu().numpy()
             WWT = W @ W.T
             all_WWT.append(WWT.reshape(1, -1))
-            train_log = trainer.NC_eval(train_loader, split='train', extra_info=A_case2)
+            train_log = trainer.NC_eval(train_loader, split='train', extra_info={'A_case2': A_case2})
             val_log = trainer.NC_eval(val_loader, split='test')
             wandb.log({'train_mse_loss': epoch_train_loss,
                        'train': train_log,

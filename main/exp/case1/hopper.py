@@ -31,8 +31,9 @@ def main():
 
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
-        'lamW', 'W', [2e-2, 1.5e-2, 1e-2, 9.5e-2,
-                      9e-3, 8.5e-3, 8e-3, 6e-3],
+        'lamW', 'W', [1e-2,
+                      9e-3, 8e-3, 7e-3, 6e-3, 5e-3, 4e-3, 3e-3, 2e-3, 1.8e-3, 1.5e-3, 1.2e-3, 1e-3,
+                      9.5e-4, 9e-4, 8e-4],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
@@ -51,13 +52,11 @@ def main():
     config.num_eval_batch = 100
 
     if config.data_size == 1000:
-        config.max_epochs = int(1e5)
+        config.max_epochs = int(1.2e6)
     elif config.data_size == 5000:
-        config.max_epochs = int(2e4)
+        config.max_epochs = int(2.4e5)
     elif config.data_size == 10000:
-        config.max_epochs = int(1e4)
-    elif config.data_size == 100000:
-        config.max_epochs = int(8e3)
+        config.max_epochs = int(1.2e5)
 
     num_evals = 200
     config.eval_freq = config.max_epochs // num_evals
@@ -69,7 +68,7 @@ def main():
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_5000_sgd'
-    config.group = 'patch1'
+    config.group = 'explore2'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
