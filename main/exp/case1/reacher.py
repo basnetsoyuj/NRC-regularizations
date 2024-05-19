@@ -51,15 +51,13 @@ def main():
 
     if config.data_size == 1000:
         config.max_epochs = int(1.2e6)
+        config.eval_freq = 100
     elif config.data_size == 5000:
         config.max_epochs = int(2e5)
     elif config.data_size == 10000:
         config.max_epochs = int(8e4)
     elif config.data_size == 100000:
         config.max_epochs = int(8e3)
-
-    num_evals = 200
-    config.eval_freq = config.max_epochs // num_evals
 
     if config.mode == 'no_relu':
         config.arch = '256-R-256-R-256|T'
