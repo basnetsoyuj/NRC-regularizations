@@ -21,7 +21,7 @@ def main():
 
     settings = [
         'env', 'E', ['hopper'],
-        'mode', 'M', ['null'],
+        'mode', 'M', ['no_relu', 'null'],
 
         'max_epochs', '', [250],
         'batch_size', '', [256],
@@ -58,8 +58,7 @@ def main():
     elif config.data_size == 10000:
         config.max_epochs = int(1.2e5)
 
-    num_evals = 200
-    config.eval_freq = config.max_epochs // num_evals
+    config.eval_freq = 100
 
     if config.mode == 'no_relu':
         config.arch = '256-R-256-R-256|T'
@@ -68,7 +67,7 @@ def main():
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_5000_sgd'
-    config.group = 'explore2'
+    config.group = 'final'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)

@@ -32,7 +32,7 @@ def main():
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
         'lamW', 'W', [4.5e-2, 4e-2, 3.5e-2, 3e-2, 2.5e-2, 2e-2, 1.5e-2, 1e-2,
-                      9e-3, 7e-3, 5e-3, 3e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 0],
+                      9e-3, 7e-3],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
@@ -52,7 +52,7 @@ def main():
 
     if config.data_size == 1000:
         if config.lamW > 0.005:
-            config.max_epochs = int(1e5)
+            config.max_epochs = int(8e5)
         else:
             config.max_epochs = int(8e5)
         config.eval_freq = 100
@@ -70,7 +70,7 @@ def main():
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_5000_sgd'
-    config.group = 'final'
+    config.group = 'final_long'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
