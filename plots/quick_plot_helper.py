@@ -236,23 +236,17 @@ def plot_full_datasets(dataset_group, variants, measure_group, legend_group,
                         use_size = int(total_size * use_ratio[l][i][j])
 
                     # Want to make x-axis length of mujoco datasets uniform with 1000
-                    num_points = 1000
+                    num_points = 200
                     if dataset in ['reacher', 'hopper', 'swimmer']:
                         gap = use_size // num_points
-
+                        x_to_plot = x_to_plot * 100
 
                     # Mujoco exps forget to square the nrc3
                     if dataset in ['reacher', 'hopper', 'swimmer'] and y_metric == 'NRC3_epoch':
                         y_to_plot = y_to_plot ** 2
 
                     x_to_plot = x_to_plot[:use_size:gap]
-                    if dataset in ['reacher', 'hopper', 'swimmer'] and num_points < use_size:
-                        x_to_plot = np.arange(x_to_plot.shape[0])
-
                     y_to_plot = y_to_plot[:use_size:gap]
-                    if dataset == 'hopper':
-                        x_to_plot = x_to_plot[:num_points]
-                        y_to_plot = y_to_plot[:num_points]
 
                     if ax2 is not None:
                         if y_metric in ['NRC1', 'NRC2']:
@@ -273,6 +267,15 @@ def plot_full_datasets(dataset_group, variants, measure_group, legend_group,
                                      n_boot=20, label=legend_group[i][k], color=colors[k],
                                      linestyle=linestyles[k], linewidth=linewidth,
                                      marker=marker, ms=ms)
+
+                if dataset in ['reacher', 'swimmer', 'hopper']:
+                    ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
+                    ax.xaxis.get_offset_text().set_position((1.0, 0))
+                    ax.xaxis.get_offset_text().set_size(8)
+                if 'trainError' in y_values and dataset in ['reacher', 'carla1d']:
+                    ax.ticklabel_format(style='scientific', axis='y', scilimits=(0, 0))
+                    ax.yaxis.get_offset_text().set_size(8)
+
 
                 if ax2 is not None:
                     lines_1, labels_1 = ax.get_legend_handles_labels()
@@ -440,7 +443,7 @@ def plot_multi_variants(datasets, variant_group, measures, legend_group,
                     size = x_to_plot.shape[0]
                     num_points = size
                     gap = size // num_points
-                    x_to_plot = x_to_plot[::gap]
+                    x_to_plot = x_to_plot[::gap] * 100
                     y_to_plot = y_to_plot[::gap]
                     legend = None
                     if j + 1 == len(measures):
@@ -450,13 +453,17 @@ def plot_multi_variants(datasets, variant_group, measures, legend_group,
                                  linestyle=linestyles[k], linewidth=linewidth,
                                  marker=marker, ms=ms)
 
+                    ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
+                    ax.xaxis.get_offset_text().set_position((1.0, 0))
+                    ax.xaxis.get_offset_text().set_size(8)
+
             ax.grid(True, linestyle='dashed')
             if dataset == 'carla2d':
                 ax.set_yscale('log')
             if j+1 == len(measures):
                 ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-            ax.set_xlim(left=0)
+            # ax.set_xlim(left=0)
             if ymin is not None:
                 ax.set_ylim(ymin=ymin)
             if ymax is not None:
@@ -473,8 +480,8 @@ def plot_multi_variants(datasets, variant_group, measures, legend_group,
             # if ytl:
             #     ytl[0].set_verticalalignment('bottom')
             #     ytl[-1].set_verticalalignment('top')
-            # # if xtl:
-            # #     xtl[0].set_horizontalalignment('left')
+            # if xtl:
+            #     xtl[0].set_horizontalalignment('left')
 
             if j == 0:  # Only label x-axis on the bottom row
                 title = dataset.upper() if dataset == 'swimmer' else 'CARLA 2D'
