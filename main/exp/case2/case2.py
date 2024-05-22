@@ -30,8 +30,8 @@ def main():
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
-        'lamH', 'H', [1e-1, 5e-2, 1e-2, 5e-3, 1e-3],
-        'lamW', 'W', [1e-1, 5e-2, 1e-2, 5e-3, 1e-3],
+        'lamH', 'H', [1e-2, 1e-3, 1e-4, 1e-5],
+        'lamW', 'W', [1e-2, 1e-3, 1e-4, 1e-5],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
