@@ -47,12 +47,11 @@ def main():
     config.lamH = -1
     config.lr = 1e-2
 
-    config.max_epochs = 10 if config.env == 'hopper' else 100
-    config.eval_freq = 1
+    config.eval_freq = 100
 
     config.data_folder = '/NC_regression/dataset/mujoco'
     config.project = 'NC_explore'
-    config.group = 'test'
+    config.group = 'gamma'
     hyper2logname = {
         'env': 'E',
         'data_size': 'DS',

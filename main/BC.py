@@ -628,6 +628,17 @@ def run_BC(config: TrainConfig):
                        'C': train_theory_stats,
                        })
 
+        if (epoch + 1) in [config.max_epochs // (i+1) for i in range(4)]:
+            # Save NRC3 related data to local for later plots
+            save_folder = '/NC_regression/results/wwt'
+            os.makedirs(save_folder, exist_ok=True)
+            save_path = os.path.join(save_folder, config.name + '.pkl')
+            with open(save_path, 'wb') as file:
+                to_plot_nrc3 = {'WWT': np.concatenate(all_WWT, axis=0),
+                                'Sigma_sqrt': Sigma_sqrt,
+                                'min_eigval': train_theory_stats['min_eigval']}
+                pickle.dump(to_plot_nrc3, file)
+
     # # Compute residuals
     # if config.env in ['reacher', 'swimmer']:
     #     with torch.no_grad():
