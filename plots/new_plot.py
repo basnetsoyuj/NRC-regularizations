@@ -139,6 +139,7 @@ for d in ['reacher', 'hopper', 'swimmer']:
     for k in keys:
         if k == 'NRC3_c':
             continue
+        dataset[k]['x']= dataset[k]['x']*100
         total_size = dataset[k]['x'].shape[0]
         num_points = 200
         gap = total_size // num_points
@@ -193,6 +194,7 @@ for i, dataset in enumerate(['reacher', 'swimmer', 'hopper', 'carla2d', 'carla1d
             a = ax.get_xticks().tolist()
             for t, tick in enumerate(a):
                 a[t] = str(a[t] // int(1e6)) +'M'
+            ax.set_xticklabels(a)
 
         if dataset == 'swimmer':
             ax.set_xticklabels(['0', '200K', '400K', '600K', '800K'])

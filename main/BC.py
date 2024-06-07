@@ -40,7 +40,7 @@ class TrainConfig:
     optimizer: str = 'sgd'
     lamH: float = 1e-5  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
-    lr: float = 3e-4
+    lr: float = 1e-2
 
     mode: str = 'null'
     data_folder: str = '/NC_regression/dataset/mujoco'
@@ -172,8 +172,8 @@ def compute_metrics(metrics, split, device, extra_info=None):
             A_case2 = extra_info
             A_case2 = torch.tensor(A_case2, dtype=torch.float32, device=device)
             A_case2_normalized = A_case2 / torch.norm(A_case2)
-            result['NRC3'] = torch.norm(WWT_normalized - A_case2_normalized).item()
-            result['NRC3_unnorm'] = torch.norm(WWT - A_case2).item()
+            result['NRC3'] = (torch.norm(WWT_normalized - A_case2_normalized).item()) ** 2
+            result['NRC3_unnorm'] = (torch.norm(WWT - A_case2).item()) ** 2
 
     # # MSE between cosine similarities of embeddings and targets with norm
     # cos_H_norm = cosine_similarity_gpu(H, H)
@@ -626,43 +626,43 @@ def run_BC(config: TrainConfig):
                        'train': train_log,
                        'validation': val_log,
                        'C': train_theory_stats,
-                       # 'valConstant': val_theory_states
                        })
 
-    if config.env in ['reacher', 'swimmer']:
-        with torch.no_grad():
-            actor.eval()
-            y = torch.empty((0,), device=config.device)
-            H = torch.empty((0,), device=config.device)
-            Wh = torch.empty((0,), device=config.device)
-            W = actor.W.weight.detach().clone()
-
-            for i, batch in enumerate(train_loader):
-                states, actions = batch['states'], batch['actions']
-                features = actor.get_feature(states)
-                preds = actor.project(features)
-
-                y = torch.cat((y, actions), dim=0)
-                H = torch.cat((H, features), dim=0)
-                Wh = torch.cat((Wh, preds), dim=0)
-
-        U = gram_schmidt(W)
-        coeff = H @ U.T
-        w1 = coeff[:, 0]
-        w2 = coeff[:, 1]
-        y1y2 = y[:, 0] / y[:, 1]
-        data = [[a, b, c] for (a, b, c) in zip(w1, w2, y1y2)]
-        table = wandb.Table(data=data, columns=["w1", "w2", 'y1/y2'])
-        try:
-            wandb.log({'Residual_table': table})
-        except Exception as e:
-            print(e)
-
-        try:
-            wandb.log(
-                {'Residual Plot': wandb.plots.HeatMap(list(w1), list(w2), y1y2.cpu().numpy(), show_text=False)})
-        except Exception as e:
-            print(e)
+    # # Compute residuals
+    # if config.env in ['reacher', 'swimmer']:
+    #     with torch.no_grad():
+    #         actor.eval()
+    #         y = torch.empty((0,), device=config.device)
+    #         H = torch.empty((0,), device=config.device)
+    #         Wh = torch.empty((0,), device=config.device)
+    #         W = actor.W.weight.detach().clone()
+    #
+    #         for i, batch in enumerate(train_loader):
+    #             states, actions = batch['states'], batch['actions']
+    #             features = actor.get_feature(states)
+    #             preds = actor.project(features)
+    #
+    #             y = torch.cat((y, actions), dim=0)
+    #             H = torch.cat((H, features), dim=0)
+    #             Wh = torch.cat((Wh, preds), dim=0)
+    #
+    #     U = gram_schmidt(W)
+    #     coeff = H @ U.T
+    #     w1 = coeff[:, 0]
+    #     w2 = coeff[:, 1]
+    #     y1y2 = y[:, 0] / y[:, 1]
+    #     data = [[a, b, c] for (a, b, c) in zip(w1, w2, y1y2)]
+    #     table = wandb.Table(data=data, columns=["w1", "w2", 'y1/y2'])
+    #     try:
+    #         wandb.log({'Residual_table': table})
+    #     except Exception as e:
+    #         print(e)
+    #
+    #     try:
+    #         wandb.log(
+    #             {'Residual Plot': wandb.plots.HeatMap(list(w1), list(w2), y1y2.cpu().numpy(), show_text=False)})
+    #     except Exception as e:
+    #         print(e)
 
     if config.lamH != -1:
         return
@@ -670,6 +670,20 @@ def run_BC(config: TrainConfig):
     # NRC3
     W = actor.W.weight.detach().clone().cpu().numpy()
     WWT = W @ W.T
+    all_WWT.append(WWT.reshape(1, -1))
+    all_WWT = np.concatenate(all_WWT, axis=0)
+
+    # Save NRC3 related data to local for later plots
+    save_folder = '/NC_regression/results/wwt'
+    os.makedirs(save_folder, exist_ok=True)
+    save_path = os.path.join(save_folder, config.name + '.pkl')
+    with open(save_path, 'wb') as file:
+        to_plot_nrc3 = {'WWT': all_WWT,
+                        'Sigma_sqrt': Sigma_sqrt,
+                        'min_eigval': train_theory_stats['min_eigval']}
+        pickle.dump(to_plot_nrc3, file)
+
+    # Log NRC3 related curves to wandb
     WWT_normalized = WWT / np.linalg.norm(WWT)
     min_eigval = train_theory_stats['min_eigval']
     # Sigma_sqrt = np.array([train_theory_stats[k] for k in ['sigma11', 'sigma12', 'sigma21', 'sigma22']]).reshape(2, 2)
@@ -681,18 +695,9 @@ def run_BC(config: TrainConfig):
         A = Sigma_sqrt - c_sqrt * np.eye(Sigma_sqrt.shape[0])
         A_normalized = A / np.linalg.norm(A)
         diff_mat = WWT_normalized - A_normalized
-        NRC3_to_plot.append(np.linalg.norm(diff_mat).item())
+        NRC3_to_plot.append((np.linalg.norm(diff_mat).item()) ** 2)
     best_c = c_to_plot[np.argmin(NRC3_to_plot)]
 
-    # rescale = 1.0
-    # ub_for_k = rescale * (min_eigval/max(config.lamW, 1e-10))**0.5
-    # k_to_plot = np.linspace(0, ub_for_k, num=2000)
-    # NRC3_new_to_plot = []
-    # for k in k_to_plot:
-    #     A = k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - k * np.eye(2))
-    #     diff_mat = WWT - A
-    #     NRC3_new_to_plot.append(np.linalg.norm(diff_mat).item())
-    # best_k = k_to_plot[np.argmin(NRC3_new_to_plot)]
 
     data = [[a, b] for (a, b) in zip(c_to_plot, NRC3_to_plot)]
     table = wandb.Table(data=data, columns=["c", "NRC3"])
@@ -706,15 +711,11 @@ def run_BC(config: TrainConfig):
 
     wandb.log({'C': {'best_c': best_c}})
 
-    all_WWT = np.concatenate(all_WWT, axis=0)
+    # ===================================================
     all_WWT_normalized = all_WWT / np.linalg.norm(all_WWT, axis=1, keepdims=True)
-
     A_c = Sigma_sqrt - (best_c ** 0.5) * np.eye(Sigma_sqrt.shape[0])
     A_c = A_c / np.linalg.norm(A_c)
-    all_NCR3 = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1)
-
-    # A_k = best_k * (Sigma_sqrt / max(config.lamW, 1e-10) ** 0.5 - best_k * np.eye(2))
-    # all_NCR3_new = np.linalg.norm(all_WWT - A_k.reshape(1, -1), axis=1)
+    all_NCR3 = np.linalg.norm(all_WWT_normalized - A_c.reshape(1, -1), axis=1) ** 2
 
     ep_to_plot = np.arange(all_WWT.shape[0])
     data = [[a, b] for (a, b) in zip(ep_to_plot, all_NCR3)]

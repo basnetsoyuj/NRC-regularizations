@@ -66,6 +66,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/results/reacher/final/NRC3_epoch.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/results/swimmer/DS1000_Mgelu_WD0.01/NRC1.csv">
           <value>
             <Attribute>

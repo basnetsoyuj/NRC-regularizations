@@ -239,7 +239,7 @@ def plot_full_datasets(dataset_group, variants, measure_group, legend_group,
                     num_points = 200
                     if dataset in ['reacher', 'hopper', 'swimmer']:
                         gap = use_size // num_points
-                        x_to_plot = x_to_plot * 100
+                        x_to_plot = x_to_plot
 
                     # Mujoco exps forget to square the nrc3
                     if dataset in ['reacher', 'hopper', 'swimmer'] and y_metric == 'NRC3_epoch':
@@ -268,10 +268,10 @@ def plot_full_datasets(dataset_group, variants, measure_group, legend_group,
                                      linestyle=linestyles[k], linewidth=linewidth,
                                      marker=marker, ms=ms)
 
-                if dataset in ['reacher', 'swimmer', 'hopper']:
-                    ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
-                    ax.xaxis.get_offset_text().set_position((1.0, 0))
-                    ax.xaxis.get_offset_text().set_size(8)
+                # if dataset in ['reacher', 'swimmer', 'hopper']:
+                #     ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
+                #     ax.xaxis.get_offset_text().set_position((1.0, 0))
+                #     ax.xaxis.get_offset_text().set_size(8)
                 if 'trainError' in y_values and dataset in ['reacher', 'carla1d']:
                     ax.ticklabel_format(style='scientific', axis='y', scilimits=(0, 0))
                     ax.yaxis.get_offset_text().set_size(8)
@@ -453,9 +453,12 @@ def plot_multi_variants(datasets, variant_group, measures, legend_group,
                                  linestyle=linestyles[k], linewidth=linewidth,
                                  marker=marker, ms=ms)
 
-                    ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
-                    ax.xaxis.get_offset_text().set_position((1.0, 0))
-                    ax.xaxis.get_offset_text().set_size(8)
+                    # ax.ticklabel_format(style='scientific', axis='x', scilimits=(0, 0))
+                    # ax.xaxis.get_offset_text().set_position((1.0, 0))
+                    # ax.xaxis.get_offset_text().set_size(8)
+                    ax.xaxis.set_ticks([0, int(2e5), int(4e5), int(6e5),int(8e5)])
+                    ax.set_xticklabels([0, '200K', '400K', '600K', '800K'])
+
 
             ax.grid(True, linestyle='dashed')
             if dataset == 'carla2d':

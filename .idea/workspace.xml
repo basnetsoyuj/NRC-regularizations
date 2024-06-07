@@ -5,21 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c6dc0f2a-e5ca-49c2-b822-42d4bd36ab9b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/plots/new_plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plots/figures/pdf/Figure2_2x6.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/plots/figures/pdf/Figure2_4x3.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/plots/figures/pdf/Figure2_4x3.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plots/figures/pdf/Figure2_4x3_short.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/plots/figures/pdf/Figure3_1x4.pdf" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/plots/figures/pdf/Figure4.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/plots/figures/pdf/Figure4.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/new_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/plots/new_plot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/plots/plot_learning_curves.py" beforeDir="false" afterPath="$PROJECT_DIR$/plots/plot_learning_curves.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/plots/quick_plot_helper.py" beforeDir="false" afterPath="$PROJECT_DIR$/plots/quick_plot_helper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/NRC1.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/NRC1.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/NRC2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/NRC2.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/NRC3_c.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/NRC3_c.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/NRC3_epoch.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/NRC3_epoch.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/testError.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/testError.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/swimmer/final/trainError.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/swimmer/final/trainError.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,17 +43,17 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/konoki/Desktop/NC_regression/results",
+    "last_opened_file_path": "/Users/konoki/Desktop/NC_regression/main",
     "settings.editor.selected.configurable": "preferences.toDoOptions"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/main" />
       <recent name="$PROJECT_DIR$/results" />
       <recent name="$PROJECT_DIR$/main/exp/case2" />
       <recent name="$PROJECT_DIR$/main/exp/case1" />
       <recent name="$PROJECT_DIR$" />
-      <recent name="$PROJECT_DIR$/main/exp/initiative" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/plots" />
@@ -88,7 +79,13 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="false" />
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
