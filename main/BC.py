@@ -23,21 +23,21 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig:
     # Experiment
-    device: str = "cuda"
-    env: str = "swimmer"  # OpenAI gym environment name. Choose from 'swimmer' and 'reacher'.
+    device: str = "cpu"
+    env: str = "swimmer"  # OpenAI gym environment name. Choose from 'swimmer', 'reacher' and 'hopper'.
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = 5  # How often (epochs) we evaluate
-    max_epochs: int = 200  # How many epochs to run
+    eval_freq: int = 100  # How often (epochs) we evaluate
+    max_epochs: int = int(1e6)  # How many epochs to run
     checkpoints_path: Optional[str] = None  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     batch_size: int = 256  # Batch size for all networks
     num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
-    data_size: int = 10  # Number of episodes to use
-    normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center'
+    data_size: int = 1000  # Number of data points to use
+    normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center' to normalize the targets
 
     arch: str = '256-R-256-R|T'  # Actor architecture
     optimizer: str = 'sgd'
-    lamH: float = 1e-5  # If it is -1, then the model is not UFM.
+    lamH: float = -1  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
     lr: float = 1e-2
 
