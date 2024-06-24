@@ -69,8 +69,12 @@ def gram_schmidt(W):
     U[0, :] = W[0, :] / torch.norm(W[0, :], p=2)
 
     for i in range(1, dim):
-        proj = torch.dot(U[i-1, :], W[i, :]) * U[i-1, :]
-        ortho_vector = W[i, :] - proj
+        j = i - 1
+        ortho_vector = W[i, :]
+        while j >= 0:
+            proj = torch.dot(U[j, :], W[i, :]) * U[j, :]
+            ortho_vector -= proj
+            j -= 1
         U[i, :] = ortho_vector / torch.norm(ortho_vector, p=2)
 
     return U
