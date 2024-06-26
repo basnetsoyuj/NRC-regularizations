@@ -173,4 +173,3 @@ dependencies:
       - typing-extensions==4.12.2
       - typing-inspect==0.9.0
       - wandb==0.17.3
-prefix: /home/zd662/.conda/envs/nrc

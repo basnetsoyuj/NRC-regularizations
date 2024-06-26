@@ -1,6 +1,5 @@
 import os
 import torch
-import pyrallis
 import argparse
 
 from main.BC import TrainConfig, run_BC
@@ -43,7 +42,6 @@ def main():
     """replace values & global setup"""
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
-    print(config.device)
     config.lamH = -1
     config.lr = 1e-2
 
