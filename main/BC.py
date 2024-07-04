@@ -37,6 +37,8 @@ class TrainConfig:
 
     arch: str = '256-R-256-R|T'  # Actor architecture
     optimizer: str = 'sgd'
+    regularization: str = 'l2' # Choose from 'none', 'l1', 'l2', 'dropout', if dropout add D in arch for the location of the dropout layer
+    dropout_probability: float = 0.5 # dropout probability only if dropout is chosen in regularization
     lamH: float = -1  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
     lr: float = 1e-2
@@ -323,7 +325,7 @@ class MujocoBuffer(Dataset):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T'):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T', dropout_probability: float = 0.5):
         super(Actor, self).__init__()
 
         arch, use_bias = arch.split('|')
@@ -339,6 +341,8 @@ class Actor(nn.Module):
                 module_list.append(nn.Tanh())
             elif layer == 'G':
                 module_list.append(nn.GELU())
+            elif layer == 'D':
+                module_list.append(nn.Dropout(p = dropout_probability))
             else:
                 out_dim = int(layer)
                 module_list.append(nn.Linear(in_dim, out_dim))
@@ -372,6 +376,7 @@ class BC:
             self,
             actor: nn.Module,
             actor_optimizer: torch.optim.Optimizer,
+            regularization: str,
             lamH: float,
             lamW: float,
             num_eval_batch: int,
@@ -407,9 +412,16 @@ class BC:
             H = self.actor.get_feature(states)
             preds = self.actor.project(H)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
-            reg_H_loss = 0.5 * self.lamH * (torch.norm(H, p=2) ** 2) / H.shape[0]
-            reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight) ** 2
-            train_loss = mse_loss + reg_H_loss + reg_W_loss
+            if (regularization == "l1"):
+                reg_H_loss = 0.5 * self.lamH * torch.norm(H, p=1) / H.shape[0]
+                reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight, p=1)
+                train_loss = mse_loss + reg_H_loss + reg_W_loss
+            elif (regularization == "l2"):
+                reg_H_loss = 0.5 * self.lamH * (torch.norm(H, p=2) ** 2) / H.shape[0]
+                reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight) ** 2
+                train_loss = mse_loss + reg_H_loss + reg_W_loss
+            else:
+                train_loss = mse_loss
 
         log_dict["train_mse_loss"] = mse_loss.item()
         # Optimize the actor
@@ -488,7 +500,7 @@ def run_BC(config: TrainConfig):
 
     state_dim = train_dataset.get_state_dim()
     action_dim = train_dataset.get_action_dim()
-    actor = Actor(state_dim, action_dim, arch=config.arch).to(config.device)
+    actor = Actor(state_dim, action_dim, arch=config.arch, dropout_probability=config.dropout_probability).to(config.device)
 
     actor_optimizer = {'adam': torch.optim.Adam,
                        'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
@@ -496,6 +508,7 @@ def run_BC(config: TrainConfig):
     kwargs = {
         "actor": actor,
         "actor_optimizer": actor_optimizer,
+        "regularization": config.regularization,
         "lamH": config.lamH,
         "lamW": config.lamW,
         'num_eval_batch': config.num_eval_batch,

@@ -25,11 +25,11 @@ echo "Job ID: ${SLURM_ARRAY_TASK_ID}"
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate # to initialize conda on computation node
 conda activate nrc # launch your virtual environment 'nrc' for this project
 export PYTHONPATH=$PYTHONPATH:$SCRATCH/NC_regression # add project root folder so that python import works fine
-cd $SCRATCH/NC_regression # start from the project root folder, since default data folder is ./dataset/mujoco in test.py
-python main/exp/case1/reproduce.py --setting ${SLURM_ARRAY_TASK_ID} # execute corresponding python file
+cd $SCRATCH/NC_regression # start from the project root folder, since default data folder is ./dataset/mujoco in regs.py
+python main/exp/case1/regs.py --setting ${SLURM_ARRAY_TASK_ID} # execute corresponding python file
 
 #singularity exec --nv -B /scratch/$USER/NC_regression:/NC_regression -B /scratch/$USER/cql-sandbox/opt/conda/lib/python3.8/site-packages/mujoco_py/:/opt/conda/lib/python3.8/site-packages/mujoco_py/ /scratch/$USER/cql-sandbox bash -c "
 #cd /NC_regression
 #export PYTHONPATH=$PYTHONPATH:/NC_regression
-#python main/exp/case1/reproduce.py --setting ${SLURM_ARRAY_TASK_ID}
+#python main/exp/case1/regs.py --setting ${SLURM_ARRAY_TASK_ID}
 #"
