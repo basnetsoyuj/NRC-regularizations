@@ -1325,3 +1325,258 @@
 2024-07-09 14:17:48,408 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
 2024-07-09 14:17:48,408 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
 2024-07-09 14:17:48,409 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:17:49,015 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:49,016 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:17:49,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:49,592 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:17:50,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:51,017 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:51,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:51,749 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:17:51,750 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:17:51,750 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:17:51,752 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:17:52,018 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:17:52,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:53,019 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:53,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:53,599 DEBUG   SenderThread:3988477 [sender.py:send():379] send: stats
+2024-07-09 14:17:54,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:54,601 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:17:55,021 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:55,032 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:17:55,033 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:17:55,033 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:17:55,035 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:17:55,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:56,022 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:17:56,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:56,933 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: stop_status
+2024-07-09 14:17:56,934 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: stop_status
+2024-07-09 14:17:57,023 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:57,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:58,044 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:58,309 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:17:58,310 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:17:58,310 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:17:58,312 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:17:59,029 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:17:59,029 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:17:59,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:17:59,602 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:18:00,046 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:01,030 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:01,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:01,579 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:01,580 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:01,580 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:01,582 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:02,032 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:02,079 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:03,033 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:03,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:04,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:04,614 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:18:04,942 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:04,943 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:04,943 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:04,945 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:05,035 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:05,035 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:05,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:06,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:07,036 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:07,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:08,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:08,262 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:08,263 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:08,263 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:08,264 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:08,319 DEBUG   SenderThread:3988477 [sender.py:send():379] send: config
+2024-07-09 14:18:08,653 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: log_artifact
+2024-07-09 14:18:08,653 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: log_artifact
+2024-07-09 14:18:09,040 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:09,040 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:09,041 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_created():271] file/dir created: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json
+2024-07-09 14:18:09,041 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_created():271] file/dir created: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media
+2024-07-09 14:18:09,041 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_created():271] file/dir created: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table
+2024-07-09 14:18:09,045 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:09,176 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:09,218 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:09,457 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: log_artifact
+2024-07-09 14:18:09,471 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: partial_history
+2024-07-09 14:18:10,000 INFO    wandb-upload_0:3988477 [upload_job.py:push():130] Uploaded file /tmpdata/tmpkio2c87mwandb/1ca023jp-media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json
+2024-07-09 14:18:10,042 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_created():271] file/dir created: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json
+2024-07-09 14:18:10,042 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table
+2024-07-09 14:18:10,472 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:10,763 INFO    wandb-upload_0:3988477 [upload_job.py:push():130] Uploaded file /tmpdata/tmpkio2c87mwandb/6hz5cco1-media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json
+2024-07-09 14:18:10,766 INFO    wandb-upload_1:3988477 [upload_job.py:push():88] Uploaded file /home/se2422/.local/share/wandb/artifacts/staging/tmph_0j5_rb
+2024-07-09 14:18:11,043 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:11,703 INFO    SenderThread:3988477 [sender.py:send_request_log_artifact():1518] logged artifact run-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c-NRC3_vs_gamma_table - {'id': 'QXJ0aWZhY3Q6OTUwNDM2NjAy', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjI0NzA2MDk1NA==', 'latestArtifact': None}}
+2024-07-09 14:18:11,703 DEBUG   SenderThread:3988477 [sender.py:send():379] send: files
+2024-07-09 14:18:11,703 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:18:11,703 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json with policy now
+2024-07-09 14:18:11,704 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:11,704 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:11,706 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:11,708 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:11,709 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:11,709 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:11,710 DEBUG   SenderThread:3988477 [sender.py:send():379] send: config
+2024-07-09 14:18:11,710 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: log_artifact
+2024-07-09 14:18:12,045 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:12,558 INFO    wandb-upload_0:3988477 [upload_job.py:push():130] Uploaded file /tmpdata/tmpkio2c87mwandb/favwqkl4-media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json
+2024-07-09 14:18:12,993 INFO    wandb-upload_1:3988477 [upload_job.py:push():88] Uploaded file /home/se2422/.local/share/wandb/artifacts/staging/tmpsezl6f1s
+2024-07-09 14:18:13,955 INFO    SenderThread:3988477 [sender.py:send_request_log_artifact():1518] logged artifact run-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c-NRC3_vs_epoch_table - {'id': 'QXJ0aWZhY3Q6OTUwNDM2NjQz', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjI0NzA2MDk2Mg==', 'latestArtifact': None}}
+2024-07-09 14:18:13,955 DEBUG   SenderThread:3988477 [sender.py:send():379] send: files
+2024-07-09 14:18:13,955 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json with policy now
+2024-07-09 14:18:13,956 DEBUG   SenderThread:3988477 [sender.py:send():379] send: history
+2024-07-09 14:18:13,956 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: summary_record
+2024-07-09 14:18:13,957 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:13,960 DEBUG   SenderThread:3988477 [sender.py:send():379] send: exit
+2024-07-09 14:18:13,960 INFO    SenderThread:3988477 [sender.py:send_exit():586] handling exit code: 0
+2024-07-09 14:18:13,960 INFO    SenderThread:3988477 [sender.py:send_exit():588] handling runtime: 405
+2024-07-09 14:18:13,961 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:13,962 INFO    SenderThread:3988477 [sender.py:send_exit():594] send defer
+2024-07-09 14:18:13,962 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:13,962 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,962 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 0
+2024-07-09 14:18:13,962 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,962 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 0
+2024-07-09 14:18:13,963 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 1
+2024-07-09 14:18:13,963 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,963 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 1
+2024-07-09 14:18:13,963 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,963 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 1
+2024-07-09 14:18:13,963 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 2
+2024-07-09 14:18:13,963 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,963 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 2
+2024-07-09 14:18:13,963 INFO    HandlerThread:3988477 [system_monitor.py:finish():203] Stopping system monitor
+2024-07-09 14:18:13,964 DEBUG   SystemMonitor:3988477 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2024-07-09 14:18:13,964 DEBUG   SystemMonitor:3988477 [system_monitor.py:_start():183] Publishing last batch of metrics
+2024-07-09 14:18:13,964 INFO    HandlerThread:3988477 [interfaces.py:finish():200] Joined cpu monitor
+2024-07-09 14:18:13,965 INFO    HandlerThread:3988477 [interfaces.py:finish():200] Joined disk monitor
+2024-07-09 14:18:13,965 INFO    HandlerThread:3988477 [interfaces.py:finish():200] Joined memory monitor
+2024-07-09 14:18:13,965 INFO    HandlerThread:3988477 [interfaces.py:finish():200] Joined network monitor
+2024-07-09 14:18:13,966 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,966 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 2
+2024-07-09 14:18:13,966 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 3
+2024-07-09 14:18:13,966 DEBUG   SenderThread:3988477 [sender.py:send():379] send: stats
+2024-07-09 14:18:13,966 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,966 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 3
+2024-07-09 14:18:13,966 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,967 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 3
+2024-07-09 14:18:13,967 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 4
+2024-07-09 14:18:13,967 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,967 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 4
+2024-07-09 14:18:13,967 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,967 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 4
+2024-07-09 14:18:13,967 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 5
+2024-07-09 14:18:13,967 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,967 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 5
+2024-07-09 14:18:13,968 DEBUG   SenderThread:3988477 [sender.py:send():379] send: summary
+2024-07-09 14:18:13,969 INFO    SenderThread:3988477 [sender.py:_save_file():1454] saving file wandb-summary.json with policy end
+2024-07-09 14:18:13,969 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,969 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 5
+2024-07-09 14:18:13,969 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 6
+2024-07-09 14:18:13,969 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:13,969 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 6
+2024-07-09 14:18:13,970 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:13,970 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 6
+2024-07-09 14:18:13,974 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: status_report
+2024-07-09 14:18:14,048 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:14,259 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 7
+2024-07-09 14:18:14,259 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:14,259 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 7
+2024-07-09 14:18:14,260 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:14,260 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 7
+2024-07-09 14:18:14,473 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:14,582 INFO    wandb-upload_0:3988477 [upload_job.py:push():130] Uploaded file /tmpdata/tmpkio2c87mwandb/lypi1ojx-media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json
+2024-07-09 14:18:15,049 INFO    Thread-12 :3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/config.yaml
+2024-07-09 14:18:16,102 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 8
+2024-07-09 14:18:16,102 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:16,103 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:16,103 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 8
+2024-07-09 14:18:16,103 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:16,103 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 8
+2024-07-09 14:18:16,103 INFO    SenderThread:3988477 [job_builder.py:build():440] Attempting to build job artifact
+2024-07-09 14:18:16,104 INFO    SenderThread:3988477 [job_builder.py:_get_source_type():569] is repo sourced job
+2024-07-09 14:18:16,108 INFO    SenderThread:3988477 [job_builder.py:build():545] adding wandb-job metadata file
+2024-07-09 14:18:16,115 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 9
+2024-07-09 14:18:16,115 DEBUG   SenderThread:3988477 [sender.py:send():379] send: artifact
+2024-07-09 14:18:16,115 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:16,120 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 9
+2024-07-09 14:18:16,474 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:16,837 INFO    SenderThread:3988477 [sender.py:send_artifact():1530] sent artifact job-https___github.com_elgamalsalman_NRC_regularizations_main_exp_case1_regs.py - {'id': 'QXJ0aWZhY3Q6OTUwMzExNzAy', 'state': 'COMMITTED', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjI0NzAyMzQ2MQ==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6OTUwNDAxOTg4', 'versionIndex': 4}}}
+2024-07-09 14:18:16,838 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:16,838 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 9
+2024-07-09 14:18:16,838 INFO    SenderThread:3988477 [dir_watcher.py:finish():358] shutting down directory watcher
+2024-07-09 14:18:17,051 INFO    SenderThread:3988477 [dir_watcher.py:_on_file_modified():288] file/dir modified: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:17,052 INFO    SenderThread:3988477 [dir_watcher.py:finish():388] scan: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files
+2024-07-09 14:18:17,053 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json wandb-summary.json
+2024-07-09 14:18:17,053 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-metadata.json wandb-metadata.json
+2024-07-09 14:18:17,053 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/requirements.txt requirements.txt
+2024-07-09 14:18:17,056 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log output.log
+2024-07-09 14:18:17,059 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/conda-environment.yaml conda-environment.yaml
+2024-07-09 14:18:17,062 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/config.yaml config.yaml
+2024-07-09 14:18:17,068 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json media/table/NRC3_vs_epoch_table_123_8f555113dd9d0ed6f219.table.json
+2024-07-09 14:18:17,068 INFO    SenderThread:3988477 [dir_watcher.py:finish():402] scan save: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json media/table/NRC3_vs_gamma_table_121_63ef03f87561ab4471ef.table.json
+2024-07-09 14:18:17,068 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 10
+2024-07-09 14:18:17,068 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:17,068 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:17,068 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 10
+2024-07-09 14:18:17,068 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:17,069 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 10
+2024-07-09 14:18:17,069 INFO    SenderThread:3988477 [file_pusher.py:finish():169] shutting down file pusher
+2024-07-09 14:18:17,474 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:17,474 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:17,608 INFO    wandb-upload_0:3988477 [upload_job.py:push():130] Uploaded file /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/requirements.txt
+2024-07-09 14:18:17,613 INFO    wandb-upload_1:3988477 [upload_job.py:push():130] Uploaded file /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/wandb-summary.json
+2024-07-09 14:18:17,826 INFO    wandb-upload_4:3988477 [upload_job.py:push():130] Uploaded file /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/config.yaml
+2024-07-09 14:18:17,850 INFO    wandb-upload_3:3988477 [upload_job.py:push():130] Uploaded file /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/conda-environment.yaml
+2024-07-09 14:18:18,381 INFO    wandb-upload_2:3988477 [upload_job.py:push():130] Uploaded file /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/files/output.log
+2024-07-09 14:18:18,475 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:18,475 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:18,581 INFO    Thread-11 :3988477 [sender.py:transition_state():614] send defer: 11
+2024-07-09 14:18:18,581 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:18,581 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 11
+2024-07-09 14:18:18,581 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:18,581 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 11
+2024-07-09 14:18:18,582 INFO    SenderThread:3988477 [file_pusher.py:join():175] waiting for file pusher
+2024-07-09 14:18:18,582 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 12
+2024-07-09 14:18:18,582 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:18,582 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 12
+2024-07-09 14:18:18,583 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:18,583 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 12
+2024-07-09 14:18:18,583 INFO    SenderThread:3988477 [file_stream.py:finish():601] file stream finish called
+2024-07-09 14:18:19,355 INFO    SenderThread:3988477 [file_stream.py:finish():605] file stream finish is done
+2024-07-09 14:18:19,355 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 13
+2024-07-09 14:18:19,355 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:19,355 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 13
+2024-07-09 14:18:19,355 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:19,355 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 13
+2024-07-09 14:18:19,355 INFO    SenderThread:3988477 [sender.py:transition_state():614] send defer: 14
+2024-07-09 14:18:19,356 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: defer
+2024-07-09 14:18:19,356 DEBUG   SenderThread:3988477 [sender.py:send():379] send: final
+2024-07-09 14:18:19,356 INFO    HandlerThread:3988477 [handler.py:handle_request_defer():184] handle defer: 14
+2024-07-09 14:18:19,356 DEBUG   SenderThread:3988477 [sender.py:send():379] send: footer
+2024-07-09 14:18:19,356 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: defer
+2024-07-09 14:18:19,356 INFO    SenderThread:3988477 [sender.py:send_request_defer():610] handle sender defer: 14
+2024-07-09 14:18:19,357 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:19,357 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:19,357 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: server_info
+2024-07-09 14:18:19,357 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: server_info
+2024-07-09 14:18:19,358 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: poll_exit
+2024-07-09 14:18:19,360 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: get_summary
+2024-07-09 14:18:19,361 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: sampled_history
+2024-07-09 14:18:19,362 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: internal_messages
+2024-07-09 14:18:19,580 DEBUG   SenderThread:3988477 [sender.py:send_request():406] send_request: poll_exit
+2024-07-09 14:18:19,580 INFO    MainThread:3988477 [wandb_run.py:_footer_history_summary_info():3991] rendering history
+2024-07-09 14:18:19,580 INFO    MainThread:3988477 [wandb_run.py:_footer_history_summary_info():4023] rendering summary
+2024-07-09 14:18:19,581 INFO    MainThread:3988477 [wandb_run.py:_footer_sync_info():3950] logging synced files
+2024-07-09 14:18:19,581 DEBUG   HandlerThread:3988477 [handler.py:handle_request():158] handle_request: shutdown
+2024-07-09 14:18:19,581 INFO    HandlerThread:3988477 [handler.py:finish():882] shutting down handler
+2024-07-09 14:18:20,360 INFO    WriterThread:3988477 [datastore.py:close():296] close: /scratch/se2422/NRC-regularizations/wandb/run-20240709_141122-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c/run-aa73bc13-fc8c-4b2e-bd92-5b8c97b1ca7c.wandb
+2024-07-09 14:18:20,580 INFO    SenderThread:3988477 [sender.py:finish():1608] shutting down sender
+2024-07-09 14:18:20,580 INFO    SenderThread:3988477 [file_pusher.py:finish():169] shutting down file pusher
+2024-07-09 14:18:20,580 INFO    SenderThread:3988477 [file_pusher.py:join():175] waiting for file pusher
