@@ -403,11 +403,24 @@ class BC:
         if self.lamH == -1:
             preds = self.actor(states)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
-            reg_loss = 0
-            for param in self.actor.parameters():
-                reg_loss += torch.norm(param) ** 2
-            reg_loss = 0.5 * self.lamW * reg_loss
-            train_loss = mse_loss + reg_loss
+
+            if (regularization == "l1"):
+                reg_loss = 0
+                for param in self.actor.parameters():
+                    reg_loss += torch.norm(param, p=1)
+                reg_loss = 0.5 * self.lamW * reg_loss
+
+                pass
+            elif (regularization == "l2"):
+                reg_loss = 0
+                for param in self.actor.parameters():
+                    reg_loss += torch.norm(param) ** 2
+                reg_loss = 0.5 * self.lamW * reg_loss
+
+                train_loss = mse_loss + reg_loss
+            else:
+                train_loss = mse_loss
+
         else:
             H = self.actor.get_feature(states)
             preds = self.actor.project(H)
