@@ -1,0 +1,183 @@
+{
+    "os": "Linux-4.18.0-193.6.3.el8_2.x86_64-x86_64-with-glibc2.28",
+    "python": "3.9.19",
+    "heartbeatAt": "2024-07-09T08:45:01.818974",
+    "startedAt": "2024-07-09T08:45:01.016267",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--setting",
+        "0"
+    ],
+    "state": "running",
+    "program": "/scratch/se2422/NRC-regularizations/main/exp/case1/regs.py",
+    "codePathLocal": "main/exp/case1/regs.py",
+    "codePath": "main/exp/case1/regs.py",
+    "git": {
+        "remote": "https://github.com/elgamalsalman/NRC_regularizations",
+        "commit": "9caf88fcfbdea98cc5d8afb2e3d3d4c757e8113c"
+    },
+    "email": null,
+    "root": "/scratch/se2422/NRC-regularizations",
+    "host": "dn073",
+    "username": "se2422",
+    "executable": "/scratch/se2422/conda_envs/nrc/bin/python",
+    "cpu_count": 28,
+    "cpu_count_logical": 28,
+    "cpu_freq": {
+        "current": 2394.552,
+        "min": 1200.0,
+        "max": 2400.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.442,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.442,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.506,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.642,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.879,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.83,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.841,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.443,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.444,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.747,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.768,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.48,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.664,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.671,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.484,
+            "min": 1200.0,
+            "max": 2400.0
+        },
+        {
+            "current": 2394.851,
+            "min": 1200.0,
+            "max": 2400.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 10.0,
+            "used": 2.0498199462890625
+        }
+    },
+    "memory": {
+        "total": 125.40534210205078
+    }
+}

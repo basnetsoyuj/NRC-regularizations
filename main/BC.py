@@ -44,10 +44,10 @@ class TrainConfig:
     lr: float = 1e-2
 
     mode: str = 'null'  # This is for wandb grouping purpose only.
-    data_folder: str = '/NC_regression/dataset/mujoco'
+    data_folder: str = '/NRC-regularizations/dataset/mujoco'
 
     # Wandb logging
-    project: str = "NC_regression"
+    project: str = "NRC-regularizations"
     group: str = "test"
     name: str = "test"
 
@@ -178,6 +178,7 @@ def set_seed(
 
 
 def wandb_init(config: dict) -> None:
+    print("run group is: " + config["group"]);
     wandb.init(
         config=config,
         project=config["project"],
@@ -390,6 +391,7 @@ class BC:
         self.total_it = 0
         self.lamH = lamH
         self.lamW = lamW
+        self.regularization = regularization
         self.num_eval_batch = num_eval_batch
         self.device = device
 
@@ -399,19 +401,21 @@ class BC:
 
         states, actions = batch['states'], batch['actions']
 
+        train_loss = None
+
         # Compute actor loss
         if self.lamH == -1:
             preds = self.actor(states)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
 
-            if (regularization == "l1"):
+            if (self.regularization == "l1"):
                 reg_loss = 0
                 for param in self.actor.parameters():
                     reg_loss += torch.norm(param, p=1)
                 reg_loss = 0.5 * self.lamW * reg_loss
 
-                pass
-            elif (regularization == "l2"):
+                train_loss = mse_loss + reg_loss
+            elif (self.regularization == "l2"):
                 reg_loss = 0
                 for param in self.actor.parameters():
                     reg_loss += torch.norm(param) ** 2
@@ -425,11 +429,11 @@ class BC:
             H = self.actor.get_feature(states)
             preds = self.actor.project(H)
             mse_loss = 0.5 * F.mse_loss(preds, actions)
-            if (regularization == "l1"):
+            if (self.regularization == "l1"):
                 reg_H_loss = 0.5 * self.lamH * torch.norm(H, p=1) / H.shape[0]
                 reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight, p=1)
                 train_loss = mse_loss + reg_H_loss + reg_W_loss
-            elif (regularization == "l2"):
+            elif (self.regularization == "l2"):
                 reg_H_loss = 0.5 * self.lamH * (torch.norm(H, p=2) ** 2) / H.shape[0]
                 reg_W_loss = 0.5 * self.lamW * torch.norm(self.actor.W.weight) ** 2
                 train_loss = mse_loss + reg_H_loss + reg_W_loss
@@ -588,7 +592,7 @@ def run_BC(config: TrainConfig):
 
         # if (epoch + 1) in [config.max_epochs // (i+1) for i in range(4)]:
         #     # Save NRC3 related data to local for later plots
-        #     save_folder = '/NC_regression/results/wwt'
+        #     save_folder = '/NRC_regularizations/results/wwt'
         #     os.makedirs(save_folder, exist_ok=True)
         #     save_path = os.path.join(save_folder, config.name + '.pkl')
         #     with open(save_path, 'wb') as file:

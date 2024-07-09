@@ -45,7 +45,7 @@ def main():
     config.device = DEVICE
     print(config.device)
     config.regularization = 'dropout' # if dropout add D in architecture
-    config.dropout_probability = 0.2
+    config.dropout_probability = 0.5
     config.lamH = -1 # non-UFM: -1, otherwise UFM
     config.lamW = 1e-2
     config.lr = 1e-2

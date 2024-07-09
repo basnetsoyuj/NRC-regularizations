@@ -1,0 +1,31 @@
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Current SDK version is 0.17.3
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Configure stats pid to 1265249
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Loading settings from /home/se2422/.config/wandb/settings
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Loading settings from /scratch/se2422/NRC-regularizations/wandb/settings
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-07-09 12:46:37,687 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'main/exp/case1/regs.py', 'program_abspath': '/scratch/se2422/NRC-regularizations/main/exp/case1/regs.py', 'program': '/scratch/se2422/NRC-regularizations/main/exp/case1/regs.py'}
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:_log_setup():520] Logging user logs to /scratch/se2422/NRC-regularizations/wandb/run-20240709_124637-3fdef97a-f36b-4436-ae6e-1d24852dd52e/logs/debug.log
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:_log_setup():521] Logging internal logs to /scratch/se2422/NRC-regularizations/wandb/run-20240709_124637-3fdef97a-f36b-4436-ae6e-1d24852dd52e/logs/debug-internal.log
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:init():560] calling init triggers
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:init():567] wandb.init called with sweep_config: {}
+config: {'device': 'cpu', 'env': 'swimmer', 'seed': 0, 'eval_freq': 100, 'max_epochs': 12000, 'checkpoints_path': None, 'load_model': '', 'batch_size': 256, 'num_eval_batch': 100, 'data_size': 1000, 'normalize': 'none', 'arch': '256-R-256-R-256-R|T', 'optimizer': 'sgd', 'regularization': 'none', 'dropout_probability': 0.2, 'lamH': -1, 'lamW': 0.01, 'lr': 0.01, 'mode': 'null', 'data_folder': './dataset/mujoco', 'project': 'NC_explore', 'group': 'reg-none', 'name': 'Eswimmer_DS1000_wd0.01_Eps12000_Reg-none'}
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:init():610] starting backend
+2024-07-09 12:46:37,688 INFO    MainThread:1265249 [wandb_init.py:init():614] setting up manager
+2024-07-09 12:46:37,690 INFO    MainThread:1265249 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-07-09 12:46:37,693 INFO    MainThread:1265249 [wandb_init.py:init():622] backend started and connected
+2024-07-09 12:46:37,698 INFO    MainThread:1265249 [wandb_init.py:init():711] updated telemetry
+2024-07-09 12:46:37,726 INFO    MainThread:1265249 [wandb_init.py:init():744] communicating run to backend with 90.0 second timeout
+2024-07-09 12:46:38,340 INFO    MainThread:1265249 [wandb_run.py:_on_init():2402] communicating current version
+2024-07-09 12:46:38,404 INFO    MainThread:1265249 [wandb_run.py:_on_init():2411] got version response upgrade_message: "wandb version 0.17.4 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-07-09 12:46:38,405 INFO    MainThread:1265249 [wandb_init.py:init():795] starting run threads in backend
+2024-07-09 12:46:41,713 INFO    MainThread:1265249 [wandb_run.py:_console_start():2380] atexit reg
+2024-07-09 12:46:41,713 INFO    MainThread:1265249 [wandb_run.py:_redirect():2235] redirect: wrap_raw
+2024-07-09 12:46:41,713 INFO    MainThread:1265249 [wandb_run.py:_redirect():2300] Wrapping output streams.
+2024-07-09 12:46:41,714 INFO    MainThread:1265249 [wandb_run.py:_redirect():2325] Redirects installed.
+2024-07-09 12:46:41,718 INFO    MainThread:1265249 [wandb_init.py:init():838] run started, returning control to user process
+2024-07-09 12:53:10,432 INFO    MainThread:1265249 [wandb_run.py:_config_callback():1382] config_cb ('_wandb', 'visualize', 'NRC3_vs_gamma') {'panel_type': 'Vega2', 'panel_config': {'panelDefId': 'wandb/line/v0', 'fieldSettings': {'x': 'gamma', 'y': 'NRC3', 'stroke': None}, 'stringSettings': {'title': 'NRC3_vs_gamma'}, 'transform': {'name': 'tableWithLeafColNames'}, 'userQuery': {'queryFields': [{'name': 'runSets', 'args': [{'name': 'runSets', 'value': '${runSets}'}], 'fields': [{'name': 'id', 'fields': []}, {'name': 'name', 'fields': []}, {'name': '_defaultColorIndex', 'fields': []}, {'name': 'summaryTable', 'args': [{'name': 'tableKey', 'value': 'NRC3_vs_gamma_table'}], 'fields': []}]}]}}} None
+2024-07-09 12:53:11,286 INFO    MainThread:1265249 [wandb_run.py:_config_callback():1382] config_cb ('_wandb', 'visualize', 'NRC3_vs_epoch') {'panel_type': 'Vega2', 'panel_config': {'panelDefId': 'wandb/line/v0', 'fieldSettings': {'x': 'epoch', 'y': 'NRC3', 'stroke': None}, 'stringSettings': {'title': 'NRC3_vs_epoch'}, 'transform': {'name': 'tableWithLeafColNames'}, 'userQuery': {'queryFields': [{'name': 'runSets', 'args': [{'name': 'runSets', 'value': '${runSets}'}], 'fields': [{'name': 'id', 'fields': []}, {'name': 'name', 'fields': []}, {'name': '_defaultColorIndex', 'fields': []}, {'name': 'summaryTable', 'args': [{'name': 'tableKey', 'value': 'NRC3_vs_epoch_table'}], 'fields': []}]}]}}} None
+2024-07-09 12:53:23,409 WARNING MsgRouterThr:1265249 [router.py:message_loop():77] message_loop has been closed

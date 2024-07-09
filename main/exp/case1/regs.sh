@@ -24,12 +24,12 @@ echo "Job ID: ${SLURM_ARRAY_TASK_ID}"
 
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate # to initialize conda on computation node
 conda activate nrc # launch your virtual environment 'nrc' for this project
-export PYTHONPATH=$PYTHONPATH:$SCRATCH/NC_regression # add project root folder so that python import works fine
-cd $SCRATCH/NC_regression # start from the project root folder, since default data folder is ./dataset/mujoco in regs.py
+export PYTHONPATH=$PYTHONPATH:$SCRATCH/NRC-regularizations # add project root folder so that python import works fine
+cd $SCRATCH/NRC-regularizations # start from the project root folder, since default data folder is ./dataset/mujoco in regs.py
 python main/exp/case1/regs.py --setting ${SLURM_ARRAY_TASK_ID} # execute corresponding python file
 
-#singularity exec --nv -B /scratch/$USER/NC_regression:/NC_regression -B /scratch/$USER/cql-sandbox/opt/conda/lib/python3.8/site-packages/mujoco_py/:/opt/conda/lib/python3.8/site-packages/mujoco_py/ /scratch/$USER/cql-sandbox bash -c "
-#cd /NC_regression
-#export PYTHONPATH=$PYTHONPATH:/NC_regression
+#singularity exec --nv -B /scratch/$USER/NRC-regularizations:/NRC-regularizations -B /scratch/$USER/cql-sandbox/opt/conda/lib/python3.8/site-packages/mujoco_py/:/opt/conda/lib/python3.8/site-packages/mujoco_py/ /scratch/$USER/cql-sandbox bash -c "
+#cd /NRC-regularizations
+#export PYTHONPATH=$PYTHONPATH:/NRC-regularizations
 #python main/exp/case1/regs.py --setting ${SLURM_ARRAY_TASK_ID}
 #"
