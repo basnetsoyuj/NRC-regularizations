@@ -34,6 +34,8 @@ class TrainConfig:
     num_eval_batch: int = 100  # Do NC evaluation over a subset of the whole dataset
     data_size: int = 1000  # Number of data points to use
     normalize: str = 'none'  # Choose from 'none', 'normal', 'standard', 'center' to normalize the targets
+    whitening: str = 'none' # Choose from 'none', 'pca', 'zca' to whiten
+    to_whiten: str = 'actions' # Choose from 'actions', 'states', 'all' to whiten
 
     arch: str = '256-R-256-R|T'  # Actor architecture
     optimizer: str = 'sgd'
@@ -44,7 +46,7 @@ class TrainConfig:
     lr: float = 1e-2
 
     mode: str = 'null'  # This is for wandb grouping purpose only.
-    data_folder: str = '/NRC-regularizations/dataset/mujoco'
+    data_folder: str = './dataset/mujoco'
 
     # Wandb logging
     project: str = "NRC-regularizations"
@@ -81,6 +83,27 @@ def gram_schmidt(W):
 
     return U
 
+
+def zca_whitening_matrix(X):
+    """
+    Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
+    INPUT:  X: [M x N] matrix.
+        Rows: Variables
+        Columns: Observations
+    OUTPUT: ZCAMatrix: [M x M] matrix
+    """
+    # Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / N
+    sigma = np.cov(X, rowvar=True) # [M x M]
+    # Singular Value Decomposition. X = U * np.diag(S) * V
+    U,S,V = np.linalg.svd(sigma)
+        # U: [M x M] eigenvectors of sigma.
+        # S: [M x 1] eigenvalues of sigma.
+        # V: [M x M] transpose of U
+    # Whitening constant: prevents division by zero
+    epsilon = 1e-5
+    # ZCA Whitening matrix: U * Lambda * U'
+    ZCAMatrix = np.dot(U, np.dot(np.diag(1.0/np.sqrt(S + epsilon)), U.T)) # [M x M]
+    return (ZCAMatrix @ X).T
 
 def compute_metrics(metrics, split, device):
     result = {}
@@ -198,21 +221,25 @@ class MujocoBuffer(Dataset):
             data_size: int,
             normalize: str,
             device: str = "cpu",
+            whitening: str = 'none',
+            to_whiten: str = 'actions'
     ):
         self.size = 0
         self.state_dim = 0
         self.action_dim = 0
 
         self.states, self.actions = None, None
-        self._load_dataset(data_folder, env, split, data_size, normalize)
 
         self.device = device
+        
+        self._load_dataset(data_folder, env, split, data_size)
+        self.preprocess(normalize, whitening, to_whiten)
 
     def _to_tensor(self, data: np.ndarray) -> torch.Tensor:
         return torch.tensor(data, dtype=torch.float32, device=self.device)
 
     # Loads data in d4rl format, i.e. from Dict[str, np.array].
-    def _load_dataset(self, data_folder: str, env: str, split: str, data_size: int, normalize: str):
+    def _load_dataset(self, data_folder: str, env: str, split: str, data_size: int):
         file_name = '%s_%s.pkl' % (env, split)
         file_path = os.path.join(data_folder, file_name)
         try:
@@ -230,6 +257,9 @@ class MujocoBuffer(Dataset):
         self.state_dim = self.states.shape[1]
         self.action_dim = self.actions.shape[1]
 
+        print(f"Dataset size: {self.size}; State Dim: {self.state_dim}; Action_Dim: {self.action_dim}.")
+        
+    def preprocess(self, normalize: str, whitening: str, to_whiten: str):
         if normalize == 'none':
             pass
         elif normalize == 'standard':
@@ -243,8 +273,32 @@ class MujocoBuffer(Dataset):
         elif normalize == 'center':
             mean = self.actions.mean(0)
             self.actions = self.actions - mean
-
-        print(f"Dataset size: {self.size}; State Dim: {self.state_dim}; Action_Dim: {self.action_dim}.")
+    
+        if to_whiten == 'actions':
+            iterator = [[self.actions],
+                        [self.action_dim]]
+            attr_list = ['actions']
+        elif to_whiten == 'states':
+            iterator = [[self.states],
+                        [self.state_dim]]
+            attr_list = ['states']
+        elif to_whiten == 'all':
+            iterator = [[self.states, self.actions],
+                        [self.state_dim, self.action_dim]]
+            attr_list = ['states', 'actions']
+        else:
+            raise ValueError(f"Whitening target {to_whiten} not supported.")
+        
+        for data, dim, attr in zip(*iterator, attr_list):
+            if whitening == 'pca':
+                setattr(self, attr, PCA(n_components=dim, whiten=True).fit_transform(data))
+            elif whitening == 'zca':
+                setattr(self, attr, zca_whitening_matrix(data.T))
+            elif whitening == 'none':
+                pass
+            else:
+                raise ValueError(f"Whitening method {whitening} not supported.")
+        
 
     def get_state_dim(self):
         return self.state_dim
@@ -497,7 +551,9 @@ def run_BC(config: TrainConfig):
         split='train',
         data_size=config.data_size,
         normalize=config.normalize,
-        device=config.device
+        device=config.device,
+        whitening=config.whitening,
+        to_whiten=config.to_whiten
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
@@ -505,7 +561,9 @@ def run_BC(config: TrainConfig):
         split='test',
         data_size=config.data_size,
         normalize=config.normalize,
-        device=config.device
+        device=config.device,
+        whitening=config.whitening,
+        to_whiten=config.to_whiten
     )
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
