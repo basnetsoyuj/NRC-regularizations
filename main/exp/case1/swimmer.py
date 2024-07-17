@@ -49,27 +49,27 @@ def main():
     config.device = DEVICE
     config.num_eval_batch = 100
 
-    if config.data_size == 1000:
-        if config.lamW > 0.005:
-            config.max_epochs = int(8e5)
-        else:
-            config.max_epochs = int(8e5)
-        config.eval_freq = 100
-    elif config.data_size == 5000:
-        config.max_epochs = int(2e4)
-    elif config.data_size == 10000:
-        config.max_epochs = int(2e4)
-    elif config.data_size == 100000:
-        config.max_epochs = int(2e3)
+    # if config.data_size == 1000:
+    #     if config.lamW > 0.005:
+    #         config.max_epochs = int(8e5)
+    #     else:
+    #         config.max_epochs = int(8e5)
+    #     config.eval_freq = 100
+    # elif config.data_size == 5000:
+    #     config.max_epochs = int(2e4)
+    # elif config.data_size == 10000:
+    #     config.max_epochs = int(2e4)
+    # elif config.data_size == 100000:
+    #     config.max_epochs = int(2e3)
 
-    if config.mode == 'no_relu':
-        config.arch = '256-R-256-R-256|T'
-    elif config.mode == 'gelu':
-        config.arch = '256-R-256-R-256-G|T'
+    # if config.mode == 'no_relu':
+    #     config.arch = '256-R-256-R-256|T'
+    # elif config.mode == 'gelu':
+    #     config.arch = '256-R-256-R-256-G|T'
 
-    config.data_folder = '/NC_regression/dataset/mujoco'
-    config.project = 'NC_5000_sgd'
-    config.group = 'final_long'
+    config.data_folder = './dataset/mujoco/'
+    config.project = 'open-research'
+    config.group = 'first-exp'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)

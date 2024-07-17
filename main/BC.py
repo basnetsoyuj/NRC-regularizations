@@ -652,3 +652,12 @@ def run_BC(config: TrainConfig):
             )
         }
     )
+
+    # save the H
+    os.makedirs(f'H', exist_ok=True)
+
+    with open(f'H/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+        actor.eval()
+        states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
+        H = actor.get_feature(states).detach().cpu().numpy()
+        pickle.dump(H, file)
