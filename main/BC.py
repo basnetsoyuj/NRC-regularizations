@@ -600,9 +600,9 @@ def run_BC(config: TrainConfig):
         #                         'Sigma_sqrt': Sigma_sqrt,
         #                         'min_eigval': train_theory_stats['min_eigval']}
         #         pickle.dump(to_plot_nrc3, file)
-
-    if config.lamH != -1:
-        return
+    #
+    # if config.lamH != -1:
+    #     return
 
     # NRC3
     W = actor.W.weight.detach().clone().cpu().numpy()
