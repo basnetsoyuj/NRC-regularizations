@@ -2,7 +2,6 @@
 #SBATCH --verbose
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
-#SBATCH --exclude=gm[002-020],gm[022-023],gm024
 #SBATCH --mem=16GB
 #SBATCH --mail-type=ALL # select which email types will be sent
 #SBATCH --mail-user=NETID@nyu.edu # NOTE: put your netid here if you want emails
@@ -12,8 +11,8 @@
 #SBATCH --error=../logs/%A_%a.err # MAKE SURE WHEN YOU RUN THIS, ../train_logs IS A VALID PATH
 
 # #####################################################
-# #SBATCH --gres=gpu:1 # uncomment this line to request a gpu
-#SBATCH --cpus-per-task=4
+#SBATCH --partition nvidia
+#SBATCH --gres=gpu:1 # uncomment this line to request a gpu
 
 sleep $(( (RANDOM%10) + 1 )) # to avoid issues when submitting large amounts of jobs
 
@@ -23,8 +22,10 @@ echo "SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 echo "Job ID: ${SLURM_ARRAY_TASK_ID}"
 
-singularity exec --nv -B /scratch/$USER/NC_regression:/NC_regression -B /scratch/$USER/cql-sandbox/opt/conda/lib/python3.8/site-packages/mujoco_py/:/opt/conda/lib/python3.8/site-packages/mujoco_py/ /scratch/$USER/cql-sandbox bash -c "
-cd /NC_regression
-export PYTHONPATH=$PYTHONPATH:/NC_regression
-python main/exp/case1/reacher.py --setting ${SLURM_ARRAY_TASK_ID}
-"
+
+source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate # to initialize conda on computation node
+conda activate nrc # launch your virtual environment 'nrc' for this project
+export PYTHONPATH=$PYTHONPATH:$SCRATCH/NRC-regularizations # add project root folder so that python import works fine
+cd $SCRATCH/NRC-regularizations # start from the project root folder, since default data folder is ./dataset/mujoco in test.py
+python main/exp/case1/reacher.py --setting ${SLURM_ARRAY_TASK_ID} # execute corresponding python file
+
