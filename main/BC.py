@@ -84,35 +84,54 @@ def gram_schmidt(W):
     return U
 
 
-def zca_whitening_matrix(X):
-    """
-    Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
-    INPUT:  X: [M x N] matrix.
-        Rows: Variables
-        Columns: Observations
-    OUTPUT: ZCAMatrix: [M x M] matrix
-    """
-    # Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / N
-    sigma = np.cov(X, rowvar=True) # [M x M]
-    # Singular Value Decomposition. X = U * np.diag(S) * V
-    U,S,V = np.linalg.svd(sigma)
-        # U: [M x M] eigenvectors of sigma.
-        # S: [M x 1] eigenvalues of sigma.
-        # V: [M x M] transpose of U
-    # Whitening constant: prevents division by zero
-    epsilon = 1e-5
-    # ZCA Whitening matrix: U * Lambda * U'
-    ZCAMatrix = np.dot(U, np.dot(np.diag(1.0/np.sqrt(S + epsilon)), U.T)) # [M x M]
-    return (ZCAMatrix @ X).T
+class ZCA:
+    def __init__(self):
+        self.ZCAMatrix = None
+    
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
 
-def compute_metrics(metrics, split, device):
+    def transform(self, X):
+        return (X @ self.ZCAMatrix.T)
+    
+    def fit(self, X):
+        """
+        Function to compute ZCA whitening matrix (aka Mahalanobis whitening).
+        INPUT:  X: [M x N] matrix.
+            Rows: Variables
+            Columns: Observations
+        OUTPUT: ZCAMatrix: [M x M] matrix
+        """
+        # Covariance matrix [column-wise variables]: Sigma = (X-mu)' * (X-mu) / N
+        X = X.T # [N x M]
+        sigma = np.cov(X, rowvar=True) # [M x M]
+        # Singular Value Decomposition. X = U * np.diag(S) * V
+        U,S,V = np.linalg.svd(sigma)
+            # U: [M x M] eigenvectors of sigma.
+            # S: [M x 1] eigenvalues of sigma.
+            # V: [M x M] transpose of U
+        # Whitening constant: prevents division by zero
+        epsilon = 1e-5
+        # ZCA Whitening matrix: U * Lambda * U'
+        self.ZCAMatrix = np.dot(U, np.dot(np.diag(1.0/np.sqrt(S + epsilon)), U.T)) # [M x M]
+        return self.ZCAMatrix
+        
+    def inverse_transform(self, X):
+        return (X @ np.linalg.inv(self.ZCAMatrix.T))
+        
+
+
+def compute_metrics(metrics, split, dewhitener):
     result = {}
-    y = metrics['targets']  # (B,2)
-    yhat = metrics['outputs']  # (B,2)
     W = metrics['weights']  # (2,256)
     H = metrics['embeddings']  # (B,256)
     B = H.shape[0]
-
+    y = metrics['targets_original']
+    yhat = torch.tensor(
+        dewhitener(metrics['outputs'].detach().cpu().numpy()), 
+        device=y.device)  # (B,2)
+        
     result['prediction_error'] = F.mse_loss(y, yhat).item()
 
     if split == 'test':
@@ -141,7 +160,8 @@ def compute_metrics(metrics, split, device):
     del WWT
 
     # NRC1
-    H_np = H.cpu().numpy()
+    H_np = H.cpu().numpy() 
+    H_np /= np.linalg.norm(H_np, 'fro')
     pca_for_H = PCA(n_components=y_dim)
     try:
         pca_for_H.fit(H_np)
@@ -178,6 +198,7 @@ def compute_metrics(metrics, split, device):
     #     del H_proj_W
 
     # Current NRC2 computation
+    H /= np.linalg.norm(H, 'fro')
     U = gram_schmidt(W)
     P_E = torch.mm(U.T, U)
     H_proj = torch.mm(H, P_E)
@@ -222,18 +243,18 @@ class MujocoBuffer(Dataset):
             normalize: str,
             device: str = "cpu",
             whitening: str = 'none',
-            to_whiten: str = 'actions'
+            whitener = None
     ):
         self.size = 0
         self.state_dim = 0
         self.action_dim = 0
 
-        self.states, self.actions = None, None
+        self.states, self.actions, self.actions_original = None, None, None
 
         self.device = device
-        
+        self.whitener = whitener
         self._load_dataset(data_folder, env, split, data_size)
-        self.preprocess(normalize, whitening, to_whiten)
+        self.preprocess(normalize, whitening)
 
     def _to_tensor(self, data: np.ndarray) -> torch.Tensor:
         return torch.tensor(data, dtype=torch.float32, device=self.device)
@@ -250,6 +271,7 @@ class MujocoBuffer(Dataset):
                 self.size = data_size
                 self.states = dataset['observations'][:self.size, :]
                 self.actions = dataset['actions'][:self.size, :]
+                self.actions_original = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
         except Exception as e:
             print(e)
@@ -259,7 +281,7 @@ class MujocoBuffer(Dataset):
 
         print(f"Dataset size: {self.size}; State Dim: {self.state_dim}; Action_Dim: {self.action_dim}.")
         
-    def preprocess(self, normalize: str, whitening: str, to_whiten: str):
+    def preprocess(self, normalize: str, whitening: str):
         if normalize == 'none':
             pass
         elif normalize == 'standard':
@@ -273,32 +295,20 @@ class MujocoBuffer(Dataset):
         elif normalize == 'center':
             mean = self.actions.mean(0)
             self.actions = self.actions - mean
-    
-        if to_whiten == 'actions':
-            iterator = [[self.actions],
-                        [self.action_dim]]
-            attr_list = ['actions']
-        elif to_whiten == 'states':
-            iterator = [[self.states],
-                        [self.state_dim]]
-            attr_list = ['states']
-        elif to_whiten == 'all':
-            iterator = [[self.states, self.actions],
-                        [self.state_dim, self.action_dim]]
-            attr_list = ['states', 'actions']
-        else:
-            raise ValueError(f"Whitening target {to_whiten} not supported.")
+
+        if whitening == 'none':
+            self.dewhitener = lambda x: x
+            return 
         
-        for data, dim, attr in zip(*iterator, attr_list):
-            if whitening == 'pca':
-                setattr(self, attr, PCA(n_components=dim, whiten=True).fit_transform(data))
-            elif whitening == 'zca':
-                setattr(self, attr, zca_whitening_matrix(data.T))
-            elif whitening == 'none':
-                pass
-            else:
-                raise ValueError(f"Whitening method {whitening} not supported.")
-        
+        if whitening == 'pca' and self.whitener is None:
+            self.whitener =  PCA(n_components=self.action_dim, whiten=True)
+            self.whitener.fit(self.actions)
+        elif whitening == 'zca' and self.whitener is None:
+            self.whitener = ZCA()
+            self.whitener.fit(self.actions)
+            
+        self.actions = self.whitener.transform(self.actions)
+        self.dewhitener = self.whitener.inverse_transform
 
     def get_state_dim(self):
         return self.state_dim
@@ -373,10 +383,14 @@ class MujocoBuffer(Dataset):
     def __getitem__(self, idx):
         states = self.states[idx]
         actions = self.actions[idx]
+        actions_original = self.actions_original[idx]
         return {
             'states': self._to_tensor(states),
-            'actions': self._to_tensor(actions)
+            'actions': self._to_tensor(actions),
+            'actions_original': self._to_tensor(actions_original)
         }
+        
+    
 
 
 class Actor(nn.Module):
@@ -506,6 +520,7 @@ class BC:
     def NC_eval(self, dataloader, split):
         self.actor.eval()
         y = torch.empty((0,), device=self.device)
+        y_og = torch.empty((0,), device=self.device)
         H = torch.empty((0,), device=self.device)
         Wh = torch.empty((0,), device=self.device)
         W = self.actor.W.weight.detach().clone()
@@ -513,20 +528,23 @@ class BC:
         for i, batch in enumerate(dataloader):
             if split == 'train' and i + 1 > self.num_eval_batch:
                 break
-            states, actions = batch['states'], batch['actions']
+            states =  batch['states']
+            actions = batch['actions']
+            actions_orginal = batch['actions_original']
             features = self.actor.get_feature(states)
             preds = self.actor.project(features)
 
             y = torch.cat((y, actions), dim=0)
+            y_og = torch.cat((y_og, actions_orginal), dim=0)
             H = torch.cat((H, features), dim=0)
             Wh = torch.cat((Wh, preds), dim=0)
-
         res = {'targets': y,
                'embeddings': H,
                'outputs': Wh,
-               'weights': W
+               'weights': W,
+               'targets_original': y_og
                }
-        log_dict = compute_metrics(res, split, self.device)
+        log_dict = compute_metrics(res, split, dataloader.dataset.dewhitener)
         self.actor.train()
 
         return log_dict
@@ -552,8 +570,7 @@ def run_BC(config: TrainConfig):
         data_size=config.data_size,
         normalize=config.normalize,
         device=config.device,
-        whitening=config.whitening,
-        to_whiten=config.to_whiten
+        whitening=config.whitening
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
@@ -563,7 +580,7 @@ def run_BC(config: TrainConfig):
         normalize=config.normalize,
         device=config.device,
         whitening=config.whitening,
-        to_whiten=config.to_whiten
+        whitener=train_dataset.whitener
     )
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)

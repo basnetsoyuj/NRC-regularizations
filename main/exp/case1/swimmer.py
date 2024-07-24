@@ -23,7 +23,7 @@ def main():
         'env', 'E', ['swimmer'],
         'mode', 'M', ['null'],
 
-        'max_epochs', '', [250],
+        'max_epochs', '', [12000],
         'batch_size', '', [256],
         'data_size', 'DS', [1000],
         'arch', '', ['256-R-256-R-256-R|T'],
@@ -31,13 +31,14 @@ def main():
 
         'optimizer', '', ['sgd'],
         'lamH', '', [-1],
-        'lamW', 'W', [4.5e-2, 4e-2, 3.5e-2, 3e-2, 2.5e-2, 2e-2, 1.5e-2, 1e-2,
-                      9e-3, 7e-3],
+        'lamW', 'W', [1e-2],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [1],
-        'seed', '', [0]
+        'seed', '', [0],
+        'whitening', 'Wt', ['none', 'zca', 'pca'],
     ]
+    
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
 
@@ -49,26 +50,26 @@ def main():
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
     config.num_eval_batch = 100
+    
+    # if config.data_size == 1000:
+    #     if config.lamW > 0.005:
+    #         config.max_epochs = int(8e5)
+    #     else:
+    #         config.max_epochs = int(8e5)
+    #     config.eval_freq = 100
+    # elif config.data_size == 5000:
+    #     config.max_epochs = int(2e4)
+    # elif config.data_size == 10000:
+    #     config.max_epochs = int(2e4)
+    # elif config.data_size == 100000:
+    #     config.max_epochs = int(2e3)
 
-    if config.data_size == 1000:
-        if config.lamW > 0.005:
-            config.max_epochs = int(8e5)
-        else:
-            config.max_epochs = int(8e5)
-        config.eval_freq = 100
-    elif config.data_size == 5000:
-        config.max_epochs = int(2e4)
-    elif config.data_size == 10000:
-        config.max_epochs = int(2e4)
-    elif config.data_size == 100000:
-        config.max_epochs = int(2e3)
+    # if config.mode == 'no_relu':
+    #     config.arch = '256-R-256-R-256|T'
+    # elif config.mode == 'gelu':
+    #     config.arch = '256-R-256-R-256-G|T'
 
-    if config.mode == 'no_relu':
-        config.arch = '256-R-256-R-256|T'
-    elif config.mode == 'gelu':
-        config.arch = '256-R-256-R-256-G|T'
-
-    config.data_folder = '/NC_regression/dataset/mujoco'
+    config.data_folder = 'dataset/mujoco'
     config.project = 'NC_5000_sgd'
     config.group = 'final_long'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
