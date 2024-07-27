@@ -573,6 +573,7 @@ def run_BC(config: TrainConfig):
 
     mses = {'train_mses': [], 'val_mses': []}
     Hs = []
+    Ws = []
 
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
@@ -597,6 +598,9 @@ def run_BC(config: TrainConfig):
         # for last 128 epochs, save the H
         if epoch >= config.max_epochs - 128:
             actor.eval()
+
+            Ws.append(actor.W.weight.detach().cpu().numpy())
+
             states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
             Hs.append(actor.get_feature(states).detach().cpu().numpy())
             actor.train()
@@ -678,3 +682,8 @@ def run_BC(config: TrainConfig):
 
     with open(f'mses/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
         pickle.dump(mses, file)
+
+    os.makedirs(f'Ws', exist_ok=True)
+
+    with open(f'Ws/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+        pickle.dump(Ws, file)
