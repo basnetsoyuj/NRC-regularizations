@@ -1,21 +1,19 @@
+import numpy as np
 import os
 import pickle
 import random
-import uuid
-from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from tqdm import tqdm
-
-import numpy as np
-from sklearn.decomposition import PCA
-from scipy.linalg import sqrtm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import uuid
 import wandb
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from scipy.linalg import sqrtm
+from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 TensorBatch = List[torch.Tensor]
 
@@ -37,8 +35,8 @@ class TrainConfig:
 
     arch: str = '256-R-256-R|T'  # Actor architecture
     optimizer: str = 'sgd'
-    regularization: str = 'l2' # Choose from 'none', 'l1', 'l2', 'dropout', if dropout add D in arch for the location of the dropout layer
-    dropout_probability: float = 0.5 # dropout probability only if dropout is chosen in regularization
+    regularization: str = 'l2'  # Choose from 'none', 'l1', 'l2', 'dropout', if dropout add D in arch for the location of the dropout layer
+    dropout_probability: float = 0.5  # dropout probability only if dropout is chosen in regularization
     lamH: float = -1  # If it is -1, then the model is not UFM.
     lamW: float = 5e-2
     lr: float = 1e-2
@@ -139,7 +137,7 @@ def compute_metrics(metrics, split, device):
             del H_pca
             del inverse_mat
             H_proj_PCA = H_np @ P
-            result['NRC1'] = (np.linalg.norm(H_np - H_proj_PCA)**2 / B).item()
+            result['NRC1'] = (np.linalg.norm(H_np - H_proj_PCA) ** 2 / B).item()
             del H_np
             del H_proj_PCA
 
@@ -326,7 +324,8 @@ class MujocoBuffer(Dataset):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T', dropout_probability: float = 0.5):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T',
+                 dropout_probability: float = 0.5):
         super(Actor, self).__init__()
 
         arch, use_bias = arch.split('|')
@@ -343,7 +342,7 @@ class Actor(nn.Module):
             elif layer == 'G':
                 module_list.append(nn.GELU())
             elif layer == 'D':
-                module_list.append(nn.Dropout(p = dropout_probability))
+                module_list.append(nn.Dropout(p=dropout_probability))
             else:
                 out_dim = int(layer)
                 module_list.append(nn.Linear(in_dim, out_dim))
@@ -517,7 +516,8 @@ def run_BC(config: TrainConfig):
 
     state_dim = train_dataset.get_state_dim()
     action_dim = train_dataset.get_action_dim()
-    actor = Actor(state_dim, action_dim, arch=config.arch, dropout_probability=config.dropout_probability).to(config.device)
+    actor = Actor(state_dim, action_dim, arch=config.arch, dropout_probability=config.dropout_probability).to(
+        config.device)
 
     actor_optimizer = {'adam': torch.optim.Adam,
                        'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
@@ -570,6 +570,10 @@ def run_BC(config: TrainConfig):
     W = actor.W.weight.detach().clone().cpu().numpy()
     WWT = W @ W.T
     all_WWT.append(WWT.reshape(1, -1))
+
+    mses = {'train_mses': [], 'val_mses': []}
+    Hs = []
+
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
         count = 0
@@ -589,6 +593,16 @@ def run_BC(config: TrainConfig):
                        'validation': val_log,
                        'C': train_theory_stats,
                        })
+
+        # for last 128 epochs, save the H
+        if epoch >= config.max_epochs - 128:
+            actor.eval()
+            states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
+            Hs.append(actor.get_feature(states).detach().cpu().numpy())
+            actor.train()
+
+            mses['train_mses'].append(trainer.NC_eval(train_loader, split='test'))
+            mses['val_mses'].append(trainer.NC_eval(val_loader, split='test'))
 
         # if (epoch + 1) in [config.max_epochs // (i+1) for i in range(4)]:
         #     # Save NRC3 related data to local for later plots
@@ -657,7 +671,10 @@ def run_BC(config: TrainConfig):
     os.makedirs(f'H', exist_ok=True)
 
     with open(f'H/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
-        actor.eval()
-        states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
-        H = actor.get_feature(states).detach().cpu().numpy()
-        pickle.dump(H, file)
+        pickle.dump(Hs, file)
+
+    # save the mses
+    os.makedirs(f'mses', exist_ok=True)
+
+    with open(f'mses/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+        pickle.dump(mses, file)

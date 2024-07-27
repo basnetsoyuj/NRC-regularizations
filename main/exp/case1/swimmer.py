@@ -1,7 +1,7 @@
-import os
-import torch
-import pyrallis
 import argparse
+import os
+import pyrallis
+import torch
 
 from main.BC import TrainConfig, run_BC
 from main.utils import get_setting_dt
@@ -23,7 +23,7 @@ def main():
         'env', 'E', ['swimmer'],
         'mode', 'M', ['null'],
 
-        'max_epochs', '', [3000],
+        'max_epochs', '', [150000],
         'batch_size', '', [256],
         'data_size', 'DS', [1000],
         'arch', '', ['256-R-256-R-256-R|T'],
@@ -34,7 +34,7 @@ def main():
         'lamW', 'W', [0.0001, 0.00021544, 0.00046416, 0.001, 0.00215443, 0.00464159, 0.01, 0.02154435, 0.04641589, 0.1],
         'lr', 'lr', [1e-2],
 
-        'eval_freq', '', [1],
+        'eval_freq', '', [500],
         'seed', '', [0]
     ]
 
@@ -68,7 +68,7 @@ def main():
     #     config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = './dataset/mujoco/'
-    config.project = 'open-research'
+    config.project = 'good-run'
     config.group = 'first-exp'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
