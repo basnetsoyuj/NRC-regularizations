@@ -167,6 +167,31 @@ def compute_metrics(metrics, split, dewhitener):
         pca_for_H.fit(H_np)
     except Exception as e:
         print(e)
+        result['NormalizedNRC1'] = -0.5
+    else:
+        H_pca = pca_for_H.components_[:y_dim, :]  # First two principal components
+
+        try:
+            inverse_mat = np.linalg.inv(H_pca @ H_pca.T)
+        except Exception as e:
+            print(e)
+            result['NormalizedNRC1'] = -1
+        else:
+            P = H_pca.T @ inverse_mat @ H_pca
+            del pca_for_H
+            del H_pca
+            del inverse_mat
+            H_proj_PCA = H_np @ P
+            result['NormalizedNRC1'] = (np.linalg.norm(H_np - H_proj_PCA)**2 / B).item()
+            del H_np
+            del H_proj_PCA
+
+    H_np = H.cpu().numpy()
+    pca_for_H = PCA(n_components=y_dim)
+    try:
+        pca_for_H.fit(H_np)
+    except Exception as e:
+        print(e)
         result['NRC1'] = -0.5
     else:
         H_pca = pca_for_H.components_[:y_dim, :]  # First two principal components
@@ -186,6 +211,7 @@ def compute_metrics(metrics, split, dewhitener):
             del H_np
             del H_proj_PCA
 
+
     # # Old NRC2 computation
     # try:
     #     inverse_mat = torch.inverse(W @ W.T)
@@ -198,11 +224,17 @@ def compute_metrics(metrics, split, dewhitener):
     #     del H_proj_W
 
     # Current NRC2 computation
-    H /= np.linalg.norm(H, 'fro')
     U = gram_schmidt(W)
     P_E = torch.mm(U.T, U)
     H_proj = torch.mm(H, P_E)
     result['NRC2'] = F.mse_loss(H_proj, H).item()
+    del H_proj
+
+    H /= np.linalg.norm(H, 'fro')
+    U = gram_schmidt(W)
+    P_E = torch.mm(U.T, U)
+    H_proj = torch.mm(H, P_E)
+    result['NormalizedNRC2'] = F.mse_loss(H_proj, H).item()
     del H_proj
 
     return result
