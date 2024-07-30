@@ -23,7 +23,7 @@ def main():
         'env', 'E', ['swimmer'],
         'mode', 'M', ['null'],
 
-        'max_epochs', '', [12000],
+        'max_epochs', '', [150000],
         'batch_size', '', [256],
         'data_size', 'DS', [1000],
         'arch', '', ['256-R-256-R-256-R|T'],
@@ -34,7 +34,7 @@ def main():
         'lamW', 'W', [1e-2],
         'lr', 'lr', [1e-2],
 
-        'eval_freq', '', [1],
+        'eval_freq', '', [100],
         'seed', '', [0],
         'whitening', 'Wt', ['none', 'zca', 'pca'],
     ]

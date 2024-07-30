@@ -7,8 +7,8 @@
 #SBATCH --mail-user=NETID@nyu.edu # NOTE: put your netid here if you want emails
 
 #SBATCH --array=0-2 # here the number depends on number of tasks in the array, e.g. 0-11 will create 12 tasks
-#SBATCH --output=../logs/%A_%a.out # %A is SLURM_ARRAY_JOB_ID, %a is SLURM_ARRAY_TASK_ID,
-#SBATCH --error=../logs/%A_%a.err # MAKE SURE WHEN YOU RUN THIS, ../train_logs IS A VALID PATH
+#SBATCH --output=./logs/%A_%a.out # %A is SLURM_ARRAY_JOB_ID, %a is SLURM_ARRAY_TASK_ID,
+#SBATCH --error=./logs/%A_%a.err # MAKE SURE WHEN YOU RUN THIS, ../train_logs IS A VALID PATH
 
 # #####################################################
 #SBATCH --partition nvidia
@@ -22,10 +22,9 @@ echo "SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 echo "Job ID: ${SLURM_ARRAY_TASK_ID}"
 
-
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate # to initialize conda on computation node
-conda activate nrc # launch your virtual environment 'nrc' for this project
-export PYTHONPATH=$PYTHONPATH:$SCRATCH/NRC-regularizations # add project root folder so that python import works fine
-cd $SCRATCH/NRC-regularizations # start from the project root folder, since default data folder is ./dataset/mujoco in test.py
-python main/exp/case1/reacher.py --setting ${SLURM_ARRAY_TASK_ID} # execute corresponding python file
+conda activate soyuj # launch your virtual environment 'nrc' for this project
 
+cd ~/NRC-regularizations
+export PYTHONPATH=$PYTHONPATH:~/NRC-regularizations
+python main/exp/case1/reacher.py --setting ${SLURM_ARRAY_TASK_ID}
