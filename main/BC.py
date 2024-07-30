@@ -230,7 +230,7 @@ def compute_metrics(metrics, split, dewhitener):
     result['NRC2'] = F.mse_loss(H_proj, H).item()
     del H_proj
 
-    H /= np.linalg.norm(H, 'fro')
+    H /= np.linalg.norm(H.detach().cpu().numpy(), 'fro')
     U = gram_schmidt(W)
     P_E = torch.mm(U.T, U)
     H_proj = torch.mm(H, P_E)
