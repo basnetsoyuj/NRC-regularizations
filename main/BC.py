@@ -672,7 +672,7 @@ def run_BC(config: TrainConfig):
     )
 
     os.makedirs(f'E{config.env}_A{config.arch}', exist_ok=True)
-    os.chidr(f'E{config.env}_A{config.arch.replace("|T", "")}')
+    os.chdir(f'E{config.env}_A{config.arch.replace("|T", "")}')
 
     # save the H
     os.makedirs(f'H', exist_ok=True)
