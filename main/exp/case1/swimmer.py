@@ -20,22 +20,23 @@ def main():
     setting = args.setting
 
     settings = [
-        'env', 'E', ['swimmer'],
         'mode', 'M', ['null'],
 
         'max_epochs', '', [150000],
         'batch_size', '', [256],
         'data_size', 'DS', [1000],
-        'arch', '', ['256-R-256-R-256-R|T'],
+        'arch', '', ['256-R-256-R-256-R|T', '256|T'],
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
-        'lamH', '', [-1, 0.0001, 0.00021544, 0.00046416, 0.001, 0.00215443, 0.00464159, 0.01, 0.02154435, 0.04641589, 0.1],
-        'lamW', 'W', [0.0001, 0.00021544, 0.00046416, 0.001, 0.00215443, 0.00464159, 0.01, 0.02154435, 0.04641589, 0.1],
+        'lamH', '', [-1, 1e-05, 2.51188643e-05, 6.30957344e-05, 0.000158489319, 0.000398107171, 0.001, 0.00251188643, 0.00630957344, 0.0158489319, 0.0398107171, 0.1],
+        'lamW', 'W', [1e-05, 2.51188643e-05, 6.30957344e-05, 0.000158489319, 0.000398107171, 0.001, 0.00251188643, 0.00630957344, 0.0158489319, 0.0398107171, 0.1],
         'lr', 'lr', [1e-2],
 
         'eval_freq', '', [500],
-        'seed', '', [0]
+        'seed', '', [0],
+
+        'env', 'E', ['swimmer', 'hopper', 'reacher'],
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
@@ -48,6 +49,12 @@ def main():
     config = TrainConfig(**actual_setting)
     config.device = DEVICE
     config.num_eval_batch = 100
+
+    if config.lamH != -1:
+        config.arch = config.arch.replace('-R|', '|')
+
+    if config.env == 'hopper':
+        config.data_size = 10000
 
     # if config.data_size == 1000:
     #     if config.lamW > 0.005:
@@ -68,9 +75,9 @@ def main():
     #     config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = './dataset/mujoco/'
-    config.project = 'good-run'
+    config.project = 'extensive-run'
     config.group = 'first-exp'
-    config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
+    config.name = f'E{config.env}_W{config.lamW}_H{config.lamH}_A{config.arch}'
 
     run_BC(config)
 
