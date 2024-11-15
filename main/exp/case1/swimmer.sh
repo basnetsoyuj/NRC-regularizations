@@ -1,18 +1,18 @@
 #!/bin/bash
 #SBATCH --verbose
-#SBATCH --time=48:00:00
+#SBATCH --time=47:59:59
 #SBATCH --nodes=1
-#SBATCH --exclude=gm[002-020],gm[022-023],gm024
 #SBATCH --mem=16GB
 #SBATCH --mail-type=ALL # select which email types will be sent
 #SBATCH --mail-user=NETID@nyu.edu # NOTE: put your netid here if you want emails
 
-#SBATCH --array=0-9 # here the number depends on number of tasks in the array, e.g. 0-11 will create 12 tasks
-#SBATCH --output=../logs/%A_%a.out # %A is SLURM_ARRAY_JOB_ID, %a is SLURM_ARRAY_TASK_ID,
-#SBATCH --error=../logs/%A_%a.err # MAKE SURE WHEN YOU RUN THIS, ../train_logs IS A VALID PATH
+#SBATCH --array=0-53 # here the number depends on number of tasks in the array, e.g. 0-11 will create 12 tasks
+#SBATCH --output=./logs/%A_%a.out # %A is SLURM_ARRAY_JOB_ID, %a is SLURM_ARRAY_TASK_ID,
+#SBATCH --error=./logs/%A_%a.err # MAKE SURE WHEN YOU RUN THIS, ../train_logs IS A VALID PATH
 
 # #####################################################
-# #SBATCH --gres=gpu:1 # uncomment this line to request a gpu
+#SBATCH --gres=gpu:1 # uncomment this line to request a gpu
+#SBATCH --partition=nvidia # uncomment this line to request a gpu
 #SBATCH --cpus-per-task=4
 
 sleep $(( (RANDOM%10) + 1 )) # to avoid issues when submitting large amounts of jobs
@@ -23,8 +23,13 @@ echo "SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 echo "Job ID: ${SLURM_ARRAY_TASK_ID}"
 
-singularity exec --nv -B /scratch/$USER/NC_regression:/NC_regression -B /scratch/$USER/cql-sandbox/opt/conda/lib/python3.8/site-packages/mujoco_py/:/opt/conda/lib/python3.8/site-packages/mujoco_py/ /scratch/$USER/cql-sandbox bash -c "
-cd /NC_regression
-export PYTHONPATH=$PYTHONPATH:/NC_regression
+# activate conda env
+source ~/.bashrc
+
+eval "$(conda shell.bash hook)"
+
+conda activate soyuj
+
+cd /scratch/sjb8193/NRC-regularizations
+export PYTHONPATH=$PYTHONPATH:/scratch/sjb8193/NRC-regularizations
 python main/exp/case1/swimmer.py --setting ${SLURM_ARRAY_TASK_ID}
-"

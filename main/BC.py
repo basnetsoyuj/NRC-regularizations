@@ -49,6 +49,8 @@ class TrainConfig:
     group: str = "test"
     name: str = "test"
 
+    whitening: str = 'none' # Choose from 'none', 'zca', 'standardization'
+
     def __post_init__(self):
         self.name = f"{self.name}-{self.env}-{str(uuid.uuid4())[:8]}"
         if self.checkpoints_path is not None:
@@ -80,6 +82,107 @@ def gram_schmidt(W):
     return U
 
 
+class ZCA:
+    def __init__(self):
+        self.mean = None
+        self.sigma_sqrt = None
+        self.sigma_sqrt_inv = None
+
+    def fit_transform(self, Y):
+        """
+        Function to compute ZCA whitening transformation.
+        INPUT:  Y: [N x M] matrix.
+            Rows: Observations
+            Columns: Variables
+        OUTPUT: Y_zca: [N x M] matrix - whitened data
+        """
+        self.fit(Y)
+        return self.transform(Y)
+
+    def fit(self, Y):
+        """
+        Compute necessary statistics from Y
+        """
+        # Center the data
+        self.mean = np.mean(Y, axis=0, keepdims=True)
+        Y_centered = Y - self.mean
+
+        # Compute covariance matrix and its square root
+        M = Y.shape[0]
+        Sigma = (Y_centered.T @ Y_centered) / M
+        
+        # Compute Sigma^(1/2) using eigendecomposition
+        eig_vals, eig_vecs = np.linalg.eigh(Sigma)
+        sqrt_eig_vals = np.sqrt(eig_vals)
+        self.sigma_sqrt = eig_vecs @ np.diag(sqrt_eig_vals) @ eig_vecs.T
+        
+        # Compute [Sigma^(1/2)]^(-1)
+        self.sigma_sqrt_inv = eig_vecs @ np.diag(1.0/sqrt_eig_vals) @ eig_vecs.T
+        
+        return self
+
+    def transform(self, Y):
+        """
+        Apply ZCA whitening: Y_zca = [Sigma^(1/2)]^(-1)(Y - Ybar)
+        """
+        return (Y - self.mean) @ self.sigma_sqrt_inv.T
+
+    def inverse_transform(self, Y_zca):
+        """
+        De-whiten the data: Y = [Sigma^(1/2)]Y_zca + Ybar
+        """
+        return  Y_zca @ self.sigma_sqrt.T + self.mean
+
+
+class Standardization:
+    def __init__(self):
+        self.mean = None
+        self.V_sqrt = None
+        self.V_sqrt_inv = None
+
+    def fit_transform(self, Y):
+        """
+        Function to compute standardization transformation.
+        INPUT:  Y: [N x M] matrix.
+            Rows: Observations
+            Columns: Variables
+        OUTPUT: Y_std: [N x M] matrix - standardized data
+        """
+        self.fit(Y)
+        return self.transform(Y)
+
+    def fit(self, Y):
+        """
+        Compute necessary statistics from Y
+        """
+        # Center the data
+        self.mean = np.mean(Y, axis=0, keepdims=True)
+        Y_centered = Y - self.mean
+
+        # Compute variance matrix V (diagonal matrix of variances)
+        variances = np.var(Y_centered, axis=0)
+
+        # Create diagonal matrices V^(1/2) and V^(-1/2)
+        sqrt_variances = np.sqrt(variances)
+        self.V_sqrt = np.diag(sqrt_variances)
+        self.V_sqrt_inv = np.diag(1.0/sqrt_variances)
+        
+        return self
+
+    def transform(self, Y):
+        """
+        Apply standardization: Y_std = V^(-1/2)(Y - Ybar)
+        """
+        return (Y - self.mean) @ self.V_sqrt_inv
+    
+
+    def inverse_transform(self, Y_std):
+        """
+        De-standardize the data: Y = V^(1/2)Y_std + Ybar
+        """
+        return Y_std @ self.V_sqrt + self.mean
+
+
 def compute_metrics(metrics, split, device):
     result = {}
     y = metrics['targets']  # (B,2)
@@ -87,6 +190,11 @@ def compute_metrics(metrics, split, device):
     W = metrics['weights']  # (2,256)
     H = metrics['embeddings']  # (B,256)
     B = H.shape[0]
+
+    whitening = metrics['whitening']
+    if whitening is not None:
+        yhat = whitening.inverse_transform(yhat.cpu().numpy())
+        yhat = torch.tensor(yhat, dtype=torch.float32, device=device)
 
     result['prediction_error'] = F.mse_loss(y, yhat).item()
 
@@ -195,6 +303,7 @@ class MujocoBuffer(Dataset):
             split: str,
             data_size: int,
             normalize: str,
+            whitening: str = 'none',
             device: str = "cpu",
     ):
         self.size = 0
@@ -203,6 +312,17 @@ class MujocoBuffer(Dataset):
 
         self.states, self.actions = None, None
         self._load_dataset(data_folder, env, split, data_size, normalize)
+
+        self.original_actions = self.actions.copy()
+
+        if whitening == 'zca':
+            self.whitening = ZCA()
+            self.actions = self.whitening.fit_transform(self.actions)
+        elif whitening == 'standardization':
+            self.whitening = Standardization()
+            self.actions = self.whitening.fit_transform(self.actions)
+        else:
+            self.whitening = None
 
         self.device = device
 
@@ -317,9 +437,11 @@ class MujocoBuffer(Dataset):
     def __getitem__(self, idx):
         states = self.states[idx]
         actions = self.actions[idx]
+        original_actions = self.original_actions[idx]
         return {
             'states': self._to_tensor(states),
-            'actions': self._to_tensor(actions)
+            'actions': self._to_tensor(actions),
+            'original_actions': self._to_tensor(original_actions)
         }
 
 
@@ -458,18 +580,19 @@ class BC:
         for i, batch in enumerate(dataloader):
             if split == 'train' and i + 1 > self.num_eval_batch:
                 break
-            states, actions = batch['states'], batch['actions']
+            states, original_actions = batch['states'], batch['original_actions']
             features = self.actor.get_feature(states)
             preds = self.actor.project(features)
 
-            y = torch.cat((y, actions), dim=0)
+            y = torch.cat((y, original_actions), dim=0)
             H = torch.cat((H, features), dim=0)
             Wh = torch.cat((Wh, preds), dim=0)
 
         res = {'targets': y,
                'embeddings': H,
                'outputs': Wh,
-               'weights': W
+               'weights': W,
+               'whitening': dataloader.dataset.whitening
                }
         log_dict = compute_metrics(res, split, self.device)
         self.actor.train()
@@ -496,7 +619,8 @@ def run_BC(config: TrainConfig):
         split='train',
         data_size=config.data_size,
         normalize=config.normalize,
-        device=config.device
+        device=config.device,
+        whitening=config.whitening
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
@@ -506,6 +630,7 @@ def run_BC(config: TrainConfig):
         normalize=config.normalize,
         device=config.device
     )
+    val_dataset.whitening = train_dataset.whitening
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
@@ -596,17 +721,18 @@ def run_BC(config: TrainConfig):
                        })
 
         # for last 128 epochs, save the H
-        if epoch >= config.max_epochs - 128:
+        if epoch >= config.max_epochs - 16:
             actor.eval()
 
             Ws.append(actor.W.weight.detach().cpu().numpy())
 
             states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
             Hs.append(actor.get_feature(states).detach().cpu().numpy())
-            actor.train()
 
             mses['train_mses'].append(trainer.NC_eval(train_loader, split='test'))
             mses['val_mses'].append(trainer.NC_eval(val_loader, split='test'))
+
+            actor.train()
 
         # if (epoch + 1) in [config.max_epochs // (i+1) for i in range(4)]:
         #     # Save NRC3 related data to local for later plots
@@ -671,8 +797,9 @@ def run_BC(config: TrainConfig):
         }
     )
 
-    os.makedirs(f'E{config.env}_A{config.arch.replace("|T", "")}', exist_ok=True)
-    os.chdir(f'E{config.env}_A{config.arch.replace("|T", "")}')
+    folder_name = f'E{config.env}/T{"UFM" if config.lamH != -1 else "non-UFM"}/whitening_{config.whitening}/S{seed}'
+    os.makedirs(folder_name, exist_ok=True)
+    os.chdir(folder_name)
 
     # save the H
     os.makedirs(f'H', exist_ok=True)

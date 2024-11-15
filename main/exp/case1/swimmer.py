@@ -1,7 +1,8 @@
-import argparse
 import os
-import pyrallis
 import torch
+import pyrallis
+import argparse
+import numpy as np
 
 from main.BC import TrainConfig, run_BC
 from main.utils import get_setting_dt
@@ -19,24 +20,27 @@ def main():
     args = parser.parse_args()
     setting = args.setting
 
+    lamWvalues = np.logspace(-5, -1, 9, endpoint=True)
+
     settings = [
+        'seed', 'S', [0],
+        'env', 'E', ['swimmer'],
         'mode', 'M', ['null'],
 
-        'max_epochs', '', [150000],
+        'max_epochs', '', [int(1e6)],
         'batch_size', '', [256],
-        'data_size', 'DS', [1000],
-        'arch', '', ['256-R-256-R-256-R|T', '256|T'],
+        'data_size', '', [1000],
+        'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
-        'lamH', '', [-1, 1e-05, 2.51188643e-05, 6.30957344e-05, 0.000158489319, 0.000398107171, 0.001, 0.00251188643, 0.00630957344, 0.0158489319, 0.0398107171, 0.1],
-        'lamW', 'W', [1e-05, 2.51188643e-05, 6.30957344e-05, 0.000158489319, 0.000398107171, 0.001, 0.00251188643, 0.00630957344, 0.0158489319, 0.0398107171, 0.1],
+        'lamH', 'T', ['non-UFM', 'UFM'],
+        'lamW', 'W', lamWvalues.tolist(),
         'lr', 'lr', [1e-2],
 
-        'eval_freq', '', [500],
-        'seed', '', [0],
+        'eval_freq', '', [100],
 
-        'env', 'E', ['swimmer', 'hopper', 'reacher'],
+        'whitening', 'Wh', ['none', 'zca', 'standardization'],
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
@@ -47,27 +51,24 @@ def main():
 
     """replace values"""
     config = TrainConfig(**actual_setting)
+
+    if config.lamH == 'non-UFM':
+        config.lamH = -1
+    elif config.lamH == 'UFM':
+        config.lamH = config.lamW
+    
     config.device = DEVICE
     config.num_eval_batch = 100
 
-    if config.lamH != -1:
-        config.arch = config.arch.replace('-R|', '|')
-
-    if config.env == 'hopper':
-        config.data_size = 10000
-
     # if config.data_size == 1000:
-    #     if config.lamW > 0.005:
-    #         config.max_epochs = int(8e5)
-    #     else:
-    #         config.max_epochs = int(8e5)
+    #     config.max_epochs = int(1.2e6)
     #     config.eval_freq = 100
     # elif config.data_size == 5000:
-    #     config.max_epochs = int(2e4)
+    #     config.max_epochs = int(2e5)
     # elif config.data_size == 10000:
-    #     config.max_epochs = int(2e4)
+    #     config.max_epochs = int(8e4)
     # elif config.data_size == 100000:
-    #     config.max_epochs = int(2e3)
+    #     config.max_epochs = int(8e3)
 
     # if config.mode == 'no_relu':
     #     config.arch = '256-R-256-R-256|T'
@@ -75,9 +76,9 @@ def main():
     #     config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = './dataset/mujoco/'
-    config.project = 'extensive-run'
-    config.group = 'first-exp'
-    config.name = f'E{config.env}_W{config.lamW}_H{config.lamH}_A{config.arch}'
+    config.project = 'std_whitening'
+    config.group = 'final'
+    config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 
     run_BC(config)
 

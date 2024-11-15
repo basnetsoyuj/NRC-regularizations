@@ -32,8 +32,6 @@ def metric2(H1, H2):
     HT1H1 = H1.T @ H1
     H2TH2 = H2.T @ H2
 
-    breakpoint()
-
     # Normalize by Frobenius norm
     H1TH1_normalized = HT1H1 / np.linalg.norm(HT1H1, 'fro')
     H2TH2_normalized = H2TH2 / np.linalg.norm(H2TH2, 'fro')
