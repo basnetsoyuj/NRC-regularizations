@@ -465,6 +465,8 @@ class Actor(nn.Module):
                 module_list.append(nn.GELU())
             elif layer == 'D':
                 module_list.append(nn.Dropout(p=dropout_probability))
+            elif layer == 'B':
+                module_list.append(nn.BatchNorm1d(in_dim))
             else:
                 out_dim = int(layer)
                 module_list.append(nn.Linear(in_dim, out_dim))
