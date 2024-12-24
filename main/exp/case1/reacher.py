@@ -30,8 +30,7 @@ def main():
         'max_epochs', '', [int(1.5e6)],
         'batch_size', '', [256],
         'data_size', '', [1000],
-        # 'arch', '', ['256-R-256-R-256-R|T'],
-        'arch', '', ['256-R-B-256-R-B-256-R-B|T'],
+        'arch', '', ['256-R-256-R-256-R|T'],
         'normalize', '', ['none'],
 
         'optimizer', '', ['sgd'],
@@ -41,8 +40,9 @@ def main():
 
         'eval_freq', '', [100],
 
-        'whitening', 'Wh', ['none', 'zca', 'standardization'],
-
+        # 'whitening', 'Wh', ['none', 'zca', 'standardization'],
+        'whitening', 'Wh', ['none'],
+        'single_task', 'ST', [0, 1], # None for multitask
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
@@ -78,7 +78,7 @@ def main():
     #     config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = './dataset/mujoco/'
-    config.project = 'std_whitening'
+    config.project = 'mutitask_vs_single_task'
     config.group = 'final'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
 

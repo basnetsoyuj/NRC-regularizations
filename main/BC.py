@@ -50,6 +50,7 @@ class TrainConfig:
     name: str = "test"
 
     whitening: str = 'none' # Choose from 'none', 'zca', 'standardization'
+    single_task: Optional[int] = None  # Choose from 0, 1, 2 for single task, None for multitask
 
     def __post_init__(self):
         self.name = f"{self.name}-{self.env}-{str(uuid.uuid4())[:8]}"
@@ -305,12 +306,14 @@ class MujocoBuffer(Dataset):
             normalize: str,
             whitening: str = 'none',
             device: str = "cpu",
+            single_task: Optional[int] = None
     ):
         self.size = 0
         self.state_dim = 0
         self.action_dim = 0
 
         self.states, self.actions = None, None
+        self.single_task = single_task
         self._load_dataset(data_folder, env, split, data_size, normalize)
 
         self.original_actions = self.actions.copy()
@@ -340,7 +343,11 @@ class MujocoBuffer(Dataset):
                     data_size //= 5
                 self.size = data_size
                 self.states = dataset['observations'][:self.size, :]
-                self.actions = dataset['actions'][:self.size, :]
+
+                if self.single_task is not None:
+                    self.actions = dataset['actions'][:self.size, self.single_task:self.single_task + 1]
+                else:
+                    self.actions = dataset['actions'][:self.size, :]
             print('Successfully load dataset from: ', file_path)
         except Exception as e:
             print(e)
@@ -429,6 +436,14 @@ class MujocoBuffer(Dataset):
                 'm1': Y_mean[0, 0],
                 'm2': Y_mean[1, 0],
                 'm3': Y_mean[2, 0]
+            }, Sigma, Sigma_sqrt
+        elif y_dim == 1:
+            return {
+                'mu11': Sigma[0, 0],
+                'min_eigval': min_eigval,
+                'max_eigval': max_eigval,
+                'sigma11': Sigma_sqrt[0, 0],
+                'm1': Y_mean[0, 0]
             }, Sigma, Sigma_sqrt
 
     def __len__(self):
@@ -622,7 +637,8 @@ def run_BC(config: TrainConfig):
         data_size=config.data_size,
         normalize=config.normalize,
         device=config.device,
-        whitening=config.whitening
+        whitening=config.whitening,
+        single_task=config.single_task
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
@@ -630,7 +646,8 @@ def run_BC(config: TrainConfig):
         split='test',
         data_size=config.data_size,
         normalize=config.normalize,
-        device=config.device
+        device=config.device,
+        single_task=config.single_task
     )
     val_dataset.whitening = train_dataset.whitening
 
@@ -678,13 +695,13 @@ def run_BC(config: TrainConfig):
 
     # If the model is UFM, then compute A matrix explicitly here.
     # TODO: Currently focus on case1; need to record NRC3 in compute_metrics() using A_case2 for UFM model.
-    A_case2 = None
-    if config.lamH != -1 and config.lamW != 0:
-        for d in [train_theory_stats]:
-            A_case2 = (config.lamH / config.lamW) ** 0.5 * Sigma_sqrt - config.lamH * np.eye(Sigma_sqrt.shape[0])
-            d['A11'] = A_case2[0, 0]
-            d['A22'] = A_case2[1, 1]
-            d['A12'] = A_case2[0, 1]
+    # A_case2 = None
+    # if config.lamH != -1 and config.lamW != 0:
+    #     for d in [train_theory_stats]:
+    #         A_case2 = (config.lamH / config.lamW) ** 0.5 * Sigma_sqrt - config.lamH * np.eye(Sigma_sqrt.shape[0])
+    #         d['A11'] = A_case2[0, 0]
+    #         d['A22'] = A_case2[1, 1]
+    #         d['A12'] = A_case2[0, 1]
 
     train_log = trainer.NC_eval(train_loader, split='train')
     val_log = trainer.NC_eval(val_loader, split='test')
@@ -799,7 +816,7 @@ def run_BC(config: TrainConfig):
         }
     )
 
-    folder_name = f'E{config.env}/T{"UFM" if config.lamH != -1 else "non-UFM"}/whitening_{config.whitening}/S{seed}'
+    folder_name = f'E{config.env}/T{"UFM" if config.lamH != -1 else "non-UFM"}/whitening_{config.whitening}/S{seed}/dim_{config.single_task}'
     os.makedirs(folder_name, exist_ok=True)
     os.chdir(folder_name)
 
