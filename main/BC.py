@@ -14,6 +14,8 @@ from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Tuple, Union
+from torchvision import models, transforms
+from PIL import Image
 
 TensorBatch = List[torch.Tensor]
 
@@ -306,11 +308,20 @@ class MujocoBuffer(Dataset):
             normalize: str,
             whitening: str = 'none',
             device: str = "cpu",
-            single_task: Optional[int] = None
+            single_task: Optional[int] = None,
+            is_carla: bool = False
     ):
         self.size = 0
         self.state_dim = 0
         self.action_dim = 0
+        self.is_carla = is_carla
+
+        if self.is_carla:
+            self.transform = transforms.Compose([
+                transforms.Resize((224, 224)),  # Resizing images to 224x224
+                transforms.ToTensor(),          # Converting images to tensors
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # Normalizing with ImageNet stats
+            ])
 
         self.states, self.actions = None, None
         self.single_task = single_task
@@ -330,6 +341,11 @@ class MujocoBuffer(Dataset):
         self.device = device
 
     def _to_tensor(self, data: np.ndarray) -> torch.Tensor:
+        if self.is_carla and len(data.shape) == 3:  # If it's an image from Carla
+            # Assuming data is in (H, W, C) format and values are in [0, 255]
+            data = Image.fromarray(data.astype(np.uint8))
+            return self.transform(data).to(self.device)
+
         return torch.tensor(data, dtype=torch.float32, device=self.device)
 
     # Loads data in d4rl format, i.e. from Dict[str, np.array].
@@ -340,7 +356,7 @@ class MujocoBuffer(Dataset):
             with open(file_path, 'rb') as file:
                 dataset = pickle.load(file)
                 if split == 'test':
-                    data_size //= 5
+                    data_size = min(data_size // 5, dataset['observations'].shape[0])
                 self.size = data_size
                 self.states = dataset['observations'][:self.size, :]
 
@@ -352,7 +368,10 @@ class MujocoBuffer(Dataset):
         except Exception as e:
             print(e)
 
-        self.state_dim = self.states.shape[1]
+        if len(self.states.shape) == 4:
+            self.state_dim = self.states.shape[1:] # (H, W, C)
+        else:
+            self.state_dim = self.states.shape[1]
         self.action_dim = self.actions.shape[1]
 
         if normalize == 'none':
@@ -461,34 +480,40 @@ class MujocoBuffer(Dataset):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T',
+    def __init__(self, state_dim, action_dim: int, max_action: float = 1.0, arch: str = '256-R-256-R|T',
                  dropout_probability: float = 0.5):
         super(Actor, self).__init__()
 
-        arch, use_bias = arch.split('|')
-        arch = arch.split('-')
-        use_bias = True if use_bias == 'T' else False
+        if "resnet" in arch:
+            self.feature_map = models.resnet18(weights=None)
+            feature_dim = self.feature_map.fc.in_features
+            self.feature_map.fc = nn.Identity()
+            self.W = nn.Linear(feature_dim, action_dim)
+        else:
+            arch, use_bias = arch.split('|')
+            arch = arch.split('-')
+            use_bias = True if use_bias == 'T' else False
 
-        in_dim = state_dim
-        module_list = []
-        for i, layer in enumerate(arch):
-            if layer == 'R':
-                module_list.append(nn.ReLU())
-            elif layer == 'T':
-                module_list.append(nn.Tanh())
-            elif layer == 'G':
-                module_list.append(nn.GELU())
-            elif layer == 'D':
-                module_list.append(nn.Dropout(p=dropout_probability))
-            elif layer == 'B':
-                module_list.append(nn.BatchNorm1d(in_dim))
-            else:
-                out_dim = int(layer)
-                module_list.append(nn.Linear(in_dim, out_dim))
-                in_dim = out_dim
+            in_dim = state_dim
+            module_list = []
+            for i, layer in enumerate(arch):
+                if layer == 'R':
+                    module_list.append(nn.ReLU())
+                elif layer == 'T':
+                    module_list.append(nn.Tanh())
+                elif layer == 'G':
+                    module_list.append(nn.GELU())
+                elif layer == 'D':
+                    module_list.append(nn.Dropout(p=dropout_probability))
+                elif layer == 'B':
+                    module_list.append(nn.BatchNorm1d(in_dim))
+                else:
+                    out_dim = int(layer)
+                    module_list.append(nn.Linear(in_dim, out_dim))
+                    in_dim = out_dim
 
-        self.feature_map = nn.Sequential(*module_list)
-        self.W = nn.Linear(in_dim, action_dim, bias=use_bias)
+            self.feature_map = nn.Sequential(*module_list)
+            self.W = nn.Linear(in_dim, action_dim, bias=use_bias)
 
         self.max_action = max_action
 
@@ -638,7 +663,8 @@ def run_BC(config: TrainConfig):
         normalize=config.normalize,
         device=config.device,
         whitening=config.whitening,
-        single_task=config.single_task
+        single_task=config.single_task,
+        is_carla="carla" in config.env
     )
     val_dataset = MujocoBuffer(
         data_folder=config.data_folder,
@@ -647,7 +673,8 @@ def run_BC(config: TrainConfig):
         data_size=config.data_size,
         normalize=config.normalize,
         device=config.device,
-        single_task=config.single_task
+        single_task=config.single_task,
+        is_carla="carla" in config.env
     )
     val_dataset.whitening = train_dataset.whitening
 
@@ -663,8 +690,18 @@ def run_BC(config: TrainConfig):
     actor = Actor(state_dim, action_dim, arch=config.arch, dropout_probability=config.dropout_probability).to(
         config.device)
 
-    actor_optimizer = {'adam': torch.optim.Adam,
-                       'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
+    if config.optimizer == 'sgd' and "carla" in config.env:
+        actor_optimizer = torch.optim.SGD(actor.parameters(), 
+                                        lr=config.lr, 
+                                        momentum=0.9)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(actor_optimizer, 
+                                                       milestones=[int(0.5 * config.max_epochs), 
+                                                                 int(0.75 * config.max_epochs)], 
+                                                       gamma=0.1)
+    else:
+        actor_optimizer = {'adam': torch.optim.Adam,
+                         'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
+        scheduler = None
 
     kwargs = {
         "actor": actor,
@@ -716,8 +753,8 @@ def run_BC(config: TrainConfig):
     all_WWT.append(WWT.reshape(1, -1))
 
     mses = {'train_mses': [], 'val_mses': []}
-    Hs = []
-    Ws = []
+    # Hs = []
+    # Ws = []
 
     for epoch in range(config.max_epochs):
         epoch_train_loss = 0
@@ -739,14 +776,17 @@ def run_BC(config: TrainConfig):
                        'C': train_theory_stats,
                        })
 
-        # for last 128 epochs, save the H
-        if epoch >= config.max_epochs - 16:
+        if scheduler is not None:
+            scheduler.step()
+
+        # for last epoch, save the H
+        if epoch >= config.max_epochs - 1:
             actor.eval()
 
-            Ws.append(actor.W.weight.detach().cpu().numpy())
+            # Ws.append(actor.W.weight.detach().cpu().numpy())
 
-            states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
-            Hs.append(actor.get_feature(states).detach().cpu().numpy())
+            # states = torch.tensor(train_dataset.states, device=config.device, dtype=torch.float32)
+            # Hs.append(actor.get_feature(states).detach().cpu().numpy())
 
             mses['train_mses'].append(trainer.NC_eval(train_loader, split='test'))
             mses['val_mses'].append(trainer.NC_eval(val_loader, split='test'))
@@ -821,10 +861,15 @@ def run_BC(config: TrainConfig):
     os.chdir(folder_name)
 
     # save the H
-    os.makedirs(f'H', exist_ok=True)
+    # os.makedirs(f'H', exist_ok=True)
 
-    with open(f'H/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
-        pickle.dump(Hs, file)
+    # with open(f'H/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+    #     pickle.dump(Hs, file)
+
+    # os.makedirs(f'Ws', exist_ok=True)
+
+    # with open(f'Ws/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+    #     pickle.dump(Ws, file)
 
     # save the mses
     os.makedirs(f'mses', exist_ok=True)
@@ -832,7 +877,8 @@ def run_BC(config: TrainConfig):
     with open(f'mses/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
         pickle.dump(mses, file)
 
-    os.makedirs(f'Ws', exist_ok=True)
+    # save the actor weights
+    os.makedirs(f'weights', exist_ok=True)
 
-    with open(f'Ws/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
-        pickle.dump(Ws, file)
+    with open(f'weights/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+        torch.save(actor.state_dict(), file)
