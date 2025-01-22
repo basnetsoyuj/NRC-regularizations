@@ -32,4 +32,4 @@ conda activate soyuj
 
 cd /scratch/sjb8193/NRC-regularizations
 export PYTHONPATH=$PYTHONPATH:/scratch/sjb8193/NRC-regularizations
-python main/exp/case1/hopper.py --setting ${SLURM_ARRAY_TASK_ID}
+python main/exp/case1/carla2d_single_task.py --setting ${SLURM_ARRAY_TASK_ID}
