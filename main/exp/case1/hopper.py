@@ -42,7 +42,7 @@ def main():
 
         # 'whitening', 'Wh', ['none', 'zca', 'standardization'],
         'whitening', 'Wh', ['none'],
-        'single_task', 'ST', [0, 1, 2], # None for multitask
+        'single_task', 'ST', [0, 1, 2, None], # None for multitask
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
