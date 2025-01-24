@@ -40,9 +40,9 @@ def main():
 
         'eval_freq', '', [100],
 
-        # 'whitening', 'Wh', ['none', 'zca', 'standardization'],
-        'whitening', 'Wh', ['none'],
-        'single_task', 'ST', [0, 1, None], # None for multitask
+        'whitening', 'Wh', ['none', 'zca', 'standardization'],
+        # 'whitening', 'Wh', ['none'],
+        'single_task', 'ST', [None], # None for multitask
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
