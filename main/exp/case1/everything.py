@@ -24,7 +24,7 @@ def main():
 
     settings = [
         'seed', 'S', [1],
-        'env', 'E', ['reacher'],
+        'env', 'E', ['swimmer', 'hopper'],
         'mode', 'M', ['null'],
 
         'max_epochs', '', [1],
@@ -46,7 +46,7 @@ def main():
         'eval_freq', '', [100],
 
         # 'whitening', 'Wh', ['none'],
-        'single_task', 'ST', [None],  # None for multitask
+        'single_task', 'ST', [0, 1, 2, None],  # None for multitask
     ]
 
     indexes, actual_setting, total, hyper2logname = get_setting_dt(settings, setting)
@@ -96,9 +96,15 @@ def main():
     #     config.arch = '256-R-256-R-256-G|T'
 
     config.data_folder = './dataset/mujoco/'
-    config.project = 'rebuttal'
-    config.group = 'rebuttal'
+    config.project = 'remaining_rebuttal'
+    config.group = 'remaining_rebuttal'
     config.name = '_'.join([v + str(getattr(config, k)) for k, v in hyper2logname.items() if v != ''])
+
+    # Raise Error if the config is invalid (skip invalid config runs)
+    if config.single_task == 2 and config.env != 'hopper':
+        raise ValueError('single_task=2 is only valid for hopper')
+    if config.single_task is not None and config.whitening != 'none':
+        raise ValueError('we do not run experiments with whitening for single tasks')
 
     run_BC(config)
 
