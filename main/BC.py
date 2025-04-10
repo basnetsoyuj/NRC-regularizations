@@ -51,7 +51,7 @@ class TrainConfig:
     group: str = "test"
     name: str = "test"
 
-    whitening: str = 'none' # Choose from 'none', 'zca', 'standardization'
+    whitening: str = 'none'  # Choose from 'none', 'zca', 'standardization'
     single_task: Optional[int] = None  # Choose from 0, 1, 2 for single task, None for multitask
 
     def __post_init__(self):
@@ -113,15 +113,15 @@ class ZCA:
         # Compute covariance matrix and its square root
         M = Y.shape[0]
         Sigma = (Y_centered.T @ Y_centered) / M
-        
+
         # Compute Sigma^(1/2) using eigendecomposition
         eig_vals, eig_vecs = np.linalg.eigh(Sigma)
         sqrt_eig_vals = np.sqrt(eig_vals)
         self.sigma_sqrt = eig_vecs @ np.diag(sqrt_eig_vals) @ eig_vecs.T
-        
+
         # Compute [Sigma^(1/2)]^(-1)
         self.sigma_sqrt_inv = eig_vecs @ np.diag(1.0/sqrt_eig_vals) @ eig_vecs.T
-        
+
         return self
 
     def transform(self, Y):
@@ -134,7 +134,7 @@ class ZCA:
         """
         De-whiten the data: Y = [Sigma^(1/2)]Y_zca + Ybar
         """
-        return  Y_zca @ self.sigma_sqrt.T + self.mean
+        return Y_zca @ self.sigma_sqrt.T + self.mean
 
 
 class Standardization:
@@ -169,7 +169,7 @@ class Standardization:
         sqrt_variances = np.sqrt(variances)
         self.V_sqrt = np.diag(sqrt_variances)
         self.V_sqrt_inv = np.diag(1.0/sqrt_variances)
-        
+
         return self
 
     def transform(self, Y):
@@ -177,7 +177,6 @@ class Standardization:
         Apply standardization: Y_std = V^(-1/2)(Y - Ybar)
         """
         return (Y - self.mean) @ self.V_sqrt_inv
-    
 
     def inverse_transform(self, Y_std):
         """
@@ -287,7 +286,7 @@ def set_seed(
 
 
 def wandb_init(config: dict) -> None:
-    print("run group is: " + config["group"]);
+    print("run group is: " + config["group"])
     wandb.init(
         config=config,
         project=config["project"],
@@ -369,7 +368,7 @@ class MujocoBuffer(Dataset):
             print(e)
 
         if len(self.states.shape) == 4:
-            self.state_dim = self.states.shape[1:] # (H, W, C)
+            self.state_dim = self.states.shape[1:]  # (H, W, C)
         else:
             self.state_dim = self.states.shape[1]
         self.action_dim = self.actions.shape[1]
@@ -691,16 +690,16 @@ def run_BC(config: TrainConfig):
         config.device)
 
     if config.optimizer == 'sgd' and "carla" in config.env:
-        actor_optimizer = torch.optim.SGD(actor.parameters(), 
-                                        lr=config.lr, 
-                                        momentum=0.9)
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(actor_optimizer, 
-                                                       milestones=[int(0.5 * config.max_epochs), 
-                                                                 int(0.75 * config.max_epochs)], 
-                                                       gamma=0.1)
+        actor_optimizer = torch.optim.SGD(actor.parameters(),
+                                          lr=config.lr,
+                                          momentum=0.9)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(actor_optimizer,
+                                                         milestones=[int(0.5 * config.max_epochs),
+                                                                     int(0.75 * config.max_epochs)],
+                                                         gamma=0.1)
     else:
         actor_optimizer = {'adam': torch.optim.Adam,
-                         'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
+                           'sgd': torch.optim.SGD}[config.optimizer](actor.parameters(), lr=config.lr)
         scheduler = None
 
     kwargs = {
@@ -856,9 +855,9 @@ def run_BC(config: TrainConfig):
         }
     )
 
-    folder_name = f'E{config.env}/T{"UFM" if config.lamH != -1 else "non-UFM"}/whitening_{config.whitening}/S{seed}/dim_{config.single_task}'
-    os.makedirs(folder_name, exist_ok=True)
-    os.chdir(folder_name)
+    # folder_name = f'E{config.env}/T{"UFM" if config.lamH != -1 else "non-UFM"}/whitening_{config.whitening}/S{seed}/dim_{config.single_task}'
+    # os.makedirs(folder_name, exist_ok=True)
+    # os.chdir(folder_name)
 
     # save the H
     # os.makedirs(f'H', exist_ok=True)
@@ -872,13 +871,13 @@ def run_BC(config: TrainConfig):
     #     pickle.dump(Ws, file)
 
     # save the mses
-    os.makedirs(f'mses', exist_ok=True)
+    # os.makedirs(f'mses', exist_ok=True)
 
-    with open(f'mses/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
-        pickle.dump(mses, file)
+    # with open(f'mses/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+    #     pickle.dump(mses, file)
 
-    # save the actor weights
-    os.makedirs(f'weights', exist_ok=True)
+    # # save the actor weights
+    # os.makedirs(f'weights', exist_ok=True)
 
-    with open(f'weights/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
-        torch.save(actor.state_dict(), file)
+    # with open(f'weights/lamH_{config.lamH}_lamW_{config.lamW}.pkl', 'wb') as file:
+    #     torch.save(actor.state_dict(), file)
